@@ -1,0 +1,122 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Regridding library &#8212; Machine Learning GCM</title>
+    <link rel="stylesheet" href="../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ML GCM</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../index.html">
+              <img class="logo" src="../_static/Weather-Network.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../visualisation/MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../credits.html">Small Print</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/ML_GCM">Get the source code</a></h3>
+
+<a href="https://github.com/philip-brohan/ML_GCM"
+           rel="nofollow">Github source repository</a>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an issue</a>.
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="regridding-library">
+<h1>Regridding library<a class="headerlink" href="#regridding-library" title="Permalink to this headline">¶</a></h1>
+<p>This library file contains one function:</p>
+<dl class="docutils">
+<dt>to_analysis_grid:</dt>
+<dd>THe ML GCM operates on data with a single standard grid: pole at 90N, 180E, 79 latitude values and 158 longitude values. This has the UK nicely centred and a convenient grid size for strided convolutions. This function converts any iris cube onto this grid.</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Functions for regridding data</span>
+
+<span class="c1"># The 20CRv2c grid has the UK on the grid boundary - I want it in the middle.</span>
+<span class="c1"># Also we need grid dimensions that match strided conviolutions nicely.</span>
+
+<span class="c1"># So adopt a standard analysis grid - equirectangular, with pole at</span>
+<span class="c1">#  lat 90, lon, 180, and grid size of 79x158.</span>
+
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="c1"># Regrid an iris cube onto the standard analysis grid </span>
+<span class="k">def</span> <span class="nf">to_analysis_grid</span><span class="p">(</span><span class="n">cbe</span><span class="p">):</span>
+    <span class="c1"># Standard pole with UK at centre</span>
+    <span class="n">cs</span><span class="o">=</span><span class="n">iris</span><span class="o">.</span><span class="n">coord_systems</span><span class="o">.</span><span class="n">RotatedGeogCS</span><span class="p">(</span><span class="mf">90.0</span><span class="p">,</span><span class="mf">180.0</span><span class="p">,</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="c1"># Latitudes cover -90 to 90 with 79 values</span>
+    <span class="n">lat_values</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">90</span><span class="p">,</span><span class="mi">91</span><span class="p">,</span><span class="mi">180</span><span class="o">/</span><span class="mi">78</span><span class="p">)</span>
+    <span class="n">latitude</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">DimCoord</span><span class="p">(</span><span class="n">lat_values</span><span class="p">,</span>
+                                    <span class="n">standard_name</span><span class="o">=</span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span>
+                                    <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees_north&#39;</span><span class="p">,</span>
+                                    <span class="n">coord_system</span><span class="o">=</span><span class="n">cs</span><span class="p">)</span>
+    <span class="c1"># Longitudes cover -180 to 180 with 159 values</span>
+    <span class="n">lon_values</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="o">-</span><span class="mi">180</span><span class="p">,</span><span class="mi">181</span><span class="p">,</span><span class="mi">360</span><span class="o">/</span><span class="mi">158</span><span class="p">)</span>
+    <span class="n">longitude</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">coords</span><span class="o">.</span><span class="n">DimCoord</span><span class="p">(</span><span class="n">lon_values</span><span class="p">,</span>
+                                     <span class="n">standard_name</span><span class="o">=</span><span class="s1">&#39;longitude&#39;</span><span class="p">,</span>
+                                     <span class="n">units</span><span class="o">=</span><span class="s1">&#39;degrees_east&#39;</span><span class="p">,</span>
+                                     <span class="n">coord_system</span><span class="o">=</span><span class="n">cs</span><span class="p">)</span>
+    <span class="n">dummy_data</span> <span class="o">=</span> <span class="n">numpy</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">lat_values</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">lon_values</span><span class="p">)))</span>
+    <span class="n">dummy_cube</span> <span class="o">=</span> <span class="n">iris</span><span class="o">.</span><span class="n">cube</span><span class="o">.</span><span class="n">Cube</span><span class="p">(</span><span class="n">dummy_data</span><span class="p">,</span>
+                               <span class="n">dim_coords_and_dims</span><span class="o">=</span><span class="p">[(</span><span class="n">latitude</span><span class="p">,</span> <span class="mi">0</span><span class="p">),</span>
+                                                    <span class="p">(</span><span class="n">longitude</span><span class="p">,</span> <span class="mi">1</span><span class="p">)])</span>
+    <span class="n">n_cube</span><span class="o">=</span><span class="n">cbe</span><span class="o">.</span><span class="n">regrid</span><span class="p">(</span><span class="n">dummy_cube</span><span class="p">,</span><span class="n">iris</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">Linear</span><span class="p">())</span>
+    <span class="k">return</span><span class="p">(</span><span class="n">n_cube</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="nav-item nav-item-0"><a href="../index.html">ML GCM</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

@@ -1,0 +1,193 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Load data for the MO global analysis video &#8212; Machine Learning GCM</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Plotting utilities library" href="../../lib/plots.html" />
+    <link rel="prev" title="Make wind speckles for the MO global analysis video" href="make_z.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../lib/plots.html" title="Plotting utilities library"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="make_z.html" title="Make wind speckles for the MO global analysis video"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Visualising the Met Office Global Analysis</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="plot.html" accesskey="U">Plot one frame from the MO global analysis video</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/Weather-Network.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/ML_GCM">Get the source code</a></h3>
+
+<a href="https://github.com/philip-brohan/ML_GCM"
+           rel="nofollow">Github source repository</a>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an issue</a>.
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="load-data-for-the-mo-global-analysis-video">
+<h1>Load data for the MO global analysis video<a class="headerlink" href="#load-data-for-the-mo-global-analysis-video" title="Permalink to this headline">¶</a></h1>
+<p>This file contains utility functions for loading data, from one point in time, from the Met Office global analysis. It contains three functions:</p>
+<dl class="docutils">
+<dt>load_recent_temperatures:</dt>
+<dd>Loads all the temperature fields from a period aroind the point specified (default +-5 days) and returns the mean over the period and the mean diurnal cycle component, at the given point in time, over the period (so if the given time is 7am it will return the mean difference betqween time at 7am and daily average).</dd>
+<dt>load_li_precip:</dt>
+<dd>Same as the load function from <a class="reference external" href="http://brohan.org/IRData/">IRData</a> except that it takes the logarithm of precipitation before interpolating in time. (When plotting log fields, you get a more consistent result from interpolating the logs than from taking the log of the interpolated value).</dd>
+<dt>load_di_icec(dte):</dt>
+<dd>Same as the load function from <a class="reference external" href="http://brohan.org/IRData/">IRData</a> except that it only loads data from file at 0Z, and otherwise interpolates. The opfc data output has 6-hourly sea-ice, but all the values within a day are the same.</dd>
+</dl>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="c1"># Data loading functions for the MO analysis video</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">IRData.opfc</span> <span class="k">as</span> <span class="nn">opfc</span>
+<span class="kn">import</span> <span class="nn">iris</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+
+<span class="c1"># We want to modify the present temperature by emphasising the difference</span>
+<span class="c1">#  with the climatological average, and reducing the diurnal variability.</span>
+<span class="c1"># To enable this make an estimate of the climatological value (mean</span>
+<span class="c1">#  from &#39;before&#39; to &#39;after&#39;), and the current diurnal variability (mean </span>
+<span class="c1">#  at current time of day, minus daily mean, over the same period)</span>
+<span class="c1"># Returns two iris cubes (climatology and diurnal cycle size).</span>
+<span class="k">def</span> <span class="nf">load_recent_temperatures</span><span class="p">(</span><span class="n">dte</span><span class="p">,</span> <span class="c1"># current time (datetime.datetime)</span>
+                             <span class="n">before</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span> <span class="c1"># use this many days before</span>
+                             <span class="n">after</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span> <span class="c1"># use this many days after</span>
+    <span class="n">stt</span><span class="o">=</span><span class="n">dte</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">before</span><span class="p">)</span>
+    <span class="n">ent</span><span class="o">=</span><span class="n">dte</span><span class="o">+</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="n">after</span><span class="p">)</span>
+    <span class="n">ct</span><span class="o">=</span><span class="n">stt</span>
+    <span class="n">tcount</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">dcount</span><span class="o">=</span><span class="mi">0</span>
+    <span class="n">tavg</span><span class="o">=</span><span class="kc">None</span>
+    <span class="n">davg</span><span class="o">=</span><span class="kc">None</span>
+    <span class="k">while</span> <span class="n">ct</span><span class="o">&lt;</span><span class="n">ent</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">ttmp</span><span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;air.2m&#39;</span><span class="p">,</span><span class="n">ct</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+            <span class="n">tcount</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">if</span> <span class="n">tavg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">tavg</span> <span class="o">=</span> <span class="n">ttmp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tavg</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">ttmp</span><span class="o">.</span><span class="n">data</span>
+            <span class="k">if</span> <span class="n">ct</span><span class="o">.</span><span class="n">hour</span><span class="o">==</span><span class="n">dte</span><span class="o">.</span><span class="n">hour</span><span class="p">:</span>
+                <span class="n">dcount</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">davg</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="n">davg</span> <span class="o">=</span> <span class="n">ttmp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">davg</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="n">ttmp</span><span class="o">.</span><span class="n">data</span>
+        <span class="k">except</span><span class="p">:</span>
+            <span class="n">ct</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="k">continue</span>
+        <span class="n">ct</span> <span class="o">+=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">tavg</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">tcount</span>
+    <span class="n">davg</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="n">dcount</span>
+    <span class="n">davg</span><span class="o">.</span><span class="n">data</span> <span class="o">-=</span> <span class="n">tavg</span><span class="o">.</span><span class="n">data</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">tavg</span><span class="p">,</span><span class="n">davg</span><span class="p">)</span>
+    
+<span class="c1"># We&#39;re plotting log precip - so interpolate in log space tooif dte.minute&lt;30:</span>
+<span class="k">def</span> <span class="nf">load_li_precip</span><span class="p">(</span><span class="n">dte</span><span class="p">):</span> <span class="c1"># Time to plot (datetime.datetime)</span>
+    <span class="k">if</span> <span class="n">dte</span><span class="o">.</span><span class="n">minute</span><span class="o">&lt;</span><span class="mi">30</span><span class="p">:</span>
+        <span class="n">prevt</span><span class="o">=</span><span class="n">dte</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="mi">30</span><span class="o">+</span><span class="n">dte</span><span class="o">.</span><span class="n">minute</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">prevt</span><span class="o">=</span><span class="n">dte</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">minutes</span><span class="o">=</span><span class="n">dte</span><span class="o">.</span><span class="n">minute</span><span class="o">-</span><span class="mi">30</span><span class="p">)</span>
+    <span class="n">nextt</span><span class="o">=</span><span class="n">prevt</span><span class="o">+</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">hours</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">prevp</span><span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;prate_a&#39;</span><span class="p">,</span><span class="n">prevt</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+    <span class="n">prevp</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mf">1.0e-7</span>
+    <span class="n">prevp</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">prevp</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">nextp</span><span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;prate_a&#39;</span><span class="p">,</span><span class="n">nextt</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+    <span class="n">nextp</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mf">1.0e-7</span>
+    <span class="n">nextp</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">nextp</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">w</span><span class="o">=</span><span class="p">(</span><span class="n">dte</span><span class="o">-</span><span class="n">prevt</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span><span class="o">/</span><span class="p">(</span><span class="n">nextt</span><span class="o">-</span><span class="n">prevt</span><span class="p">)</span><span class="o">.</span><span class="n">total_seconds</span><span class="p">()</span>
+    <span class="n">precip</span><span class="o">=</span><span class="n">prevp</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">prevp</span><span class="o">.</span><span class="n">data</span><span class="o">*</span><span class="p">(</span><span class="mi">1</span><span class="o">-</span><span class="n">w</span><span class="p">)</span><span class="o">+</span><span class="n">nextp</span><span class="o">.</span><span class="n">data</span><span class="o">*</span><span class="n">w</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">data</span> <span class="o">+=</span> <span class="mi">15</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">data</span> <span class="o">/=</span> <span class="mi">11</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">precip</span><span class="o">.</span><span class="n">data</span><span class="o">&lt;</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">precip</span><span class="o">.</span><span class="n">data</span><span class="p">[</span><span class="n">precip</span><span class="o">.</span><span class="n">data</span><span class="o">&gt;</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="n">precip</span>
+
+<span class="c1"># Sea-ice data is provided hourly, but only updated daily</span>
+<span class="c1">#  so do an explicit interpolation over the day.</span>
+<span class="k">def</span> <span class="nf">load_di_icec</span><span class="p">(</span><span class="n">dte</span><span class="p">):</span>
+    <span class="n">dte1</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">dte</span><span class="o">.</span><span class="n">year</span><span class="p">,</span><span class="n">dte</span><span class="o">.</span><span class="n">month</span><span class="p">,</span><span class="n">dte</span><span class="o">.</span><span class="n">day</span><span class="p">,</span><span class="mi">0</span><span class="p">)</span>
+    <span class="n">dte2</span><span class="o">=</span><span class="n">dte1</span><span class="o">+</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">icec</span><span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;icec&#39;</span><span class="p">,</span><span class="n">dte1</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+        <span class="n">tmp</span> <span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;icec&#39;</span><span class="p">,</span><span class="n">dte2</span><span class="p">,</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+        <span class="n">tmp</span><span class="o">.</span><span class="n">attributes</span><span class="o">=</span><span class="n">icec</span><span class="o">.</span><span class="n">attributes</span>
+        <span class="n">icec</span><span class="o">=</span><span class="n">iris</span><span class="o">.</span><span class="n">cube</span><span class="o">.</span><span class="n">CubeList</span><span class="p">((</span><span class="n">icec</span><span class="p">,</span><span class="n">tmp</span><span class="p">))</span><span class="o">.</span><span class="n">merge_cube</span><span class="p">()</span>
+        <span class="n">icec</span><span class="o">=</span><span class="n">icec</span><span class="o">.</span><span class="n">interpolate</span><span class="p">([(</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="n">dte</span><span class="p">)],</span><span class="n">iris</span><span class="o">.</span><span class="n">analysis</span><span class="o">.</span><span class="n">Linear</span><span class="p">())</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">icec</span><span class="o">=</span><span class="n">opfc</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="s1">&#39;icec&#39;</span><span class="p">,</span><span class="n">dte1</span><span class="o">-</span><span class="n">datetime</span><span class="o">.</span><span class="n">timedelta</span><span class="p">(</span><span class="n">days</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span><span class="n">model</span><span class="o">=</span><span class="s1">&#39;global&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">icec</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../lib/plots.html" title="Plotting utilities library"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="make_z.html" title="Make wind speckles for the MO global analysis video"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Visualising the Met Office Global Analysis</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="plot.html" >Plot one frame from the MO global analysis video</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

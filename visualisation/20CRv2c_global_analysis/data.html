@@ -1,0 +1,130 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Assemble data for the 20CRv2c video &#8212; Machine Learning GCM</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Plot one frame from the 20CRv2c video" href="plot.html" />
+    <link rel="prev" title="Visualising the 20th Century Reanalysis (v2c)" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="plot.html" title="Plot one frame from the 20CRv2c video"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Visualising the 20th Century Reanalysis (v2c)"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" accesskey="U">Visualising the 20th Century Reanalysis (v2c)</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/Weather-Network.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/ML_GCM">Get the source code</a></h3>
+
+<a href="https://github.com/philip-brohan/ML_GCM"
+           rel="nofollow">Github source repository</a>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an issue</a>.
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="assemble-data-for-the-20crv2c-video">
+<h1>Assemble data for the 20CRv2c video<a class="headerlink" href="#assemble-data-for-the-20crv2c-video" title="Permalink to this headline">¶</a></h1>
+<p>The <a class="reference external" href="https://www.esrl.noaa.gov/psd/data/20thC_Rean/">Twentieth Century Reanalysis</a> version 2c provides data on a 2x2 degree grid back to 1851. The data are online and can be downloaded by the <a class="reference external" href="http://brohan.org/IRData/">IRData library</a></p>
+<p>Script to collect the variables shown for one calendar year:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">IRData.twcr</span> <span class="k">as</span> <span class="nn">twcr</span>
+
+<span class="k">for</span> <span class="n">var</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;prmsl&#39;</span><span class="p">,</span><span class="s1">&#39;uwnd.10m&#39;</span><span class="p">,</span><span class="s1">&#39;vwnd.10m&#39;</span><span class="p">,</span><span class="s1">&#39;air.2m&#39;</span><span class="p">):</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="n">var</span><span class="p">,</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">12</span><span class="p">,</span><span class="mi">6</span><span class="p">),</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2c&#39;</span><span class="p">)</span>
+
+</pre></div>
+</div>
+<p>As well as the weather data, the plot script needs a land-mask file to plot the continents. This script retrieves that.</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Download everything we need except the 20CR data.</span>
+<span class="c1"># Store it on $SCRATCH</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+
+<span class="c1"># Land mask for plots</span>
+
+<span class="n">srce</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;https://s3-eu-west-1.amazonaws.com/&quot;</span><span class="o">+</span>
+      <span class="s2">&quot;philip.brohan.org.ml-gcm/opfc_global_2019.nc&quot;</span><span class="p">)</span>
+<span class="n">dst</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/fixed_fields/land_mask/opfc_global_2019.nc&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">))</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">srce</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="plot.html" title="Plot one frame from the 20CRv2c video"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="Visualising the 20th Century Reanalysis (v2c)"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="index.html" >Visualising the 20th Century Reanalysis (v2c)</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>
