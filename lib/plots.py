@@ -1,6 +1,11 @@
 # Utility functions used in various plots - particularly multi-variate
 #  reanalysis videos.
 
+import iris
+import numpy
+import matplotlib
+from matplotlib.lines import Line2D
+
 # Normalise a T2m field so it is approximately uniformly distributed
 #  over the range 0-1 (when projected in a conventional equirectangular
 #  projection). (If you then plot a colour map of the normalised data,
@@ -132,7 +137,7 @@ def wind_field(uw, # E-W wind speed (iris cube).
     return result
 
 # Draw lines of latitude and longitude
-det draw_lat_lon(ax,lwd=0.75,
+def draw_lat_lon(ax,lwd=0.75,
                     pole_longitude=180,
                     pole_latitude=90,
                     npg_longitude=0,

@@ -3,6 +3,7 @@
 import datetime
 import IRData.opfc as opfc
 import iris
+import numpy
 
 # We want to modify the present temperature by emphasising the difference
 #  with the climatological average, and reducing the diurnal variability.
@@ -63,6 +64,7 @@ def load_li_precip(dte): # Time to plot (datetime.datetime)
     precip.data /= 11
     precip.data[precip.data<0] = 0
     precip.data[precip.data>1] = 1
+    return precip
 
 # Sea-ice data is provided hourly, but only updated daily
 #  so do an explicit interpolation over the day.
@@ -77,3 +79,4 @@ def load_di_icec(dte):
         icec=icec.interpolate([('time',dte)],iris.analysis.Linear())
     except:
         icec=opfc.load('icec',dte1-datetime.timedelta(days=1),model='global')
+    return icec
