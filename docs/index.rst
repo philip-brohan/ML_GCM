@@ -31,8 +31,13 @@ Modern weather-forecast models are amazing: amazingly powerful, amazingly accura
 
     Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c <visualisation/20CRv2c_global_analysis/index>
 
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
 
-  
+   Download training data <data/download>
+   Process training data for TensorFlow<data/conversion>
+
 .. toctree::
    :titlesonly:
    :maxdepth: 1
