@@ -1,0 +1,15 @@
+#!/bin/ksh -l
+#SBATCH --qos=normal
+#SBATCH --mem=200000
+#SBATCH --ntasks=16
+#SBATCH --ntasks-per-core=1
+#SBATCH --time=30
+
+cd $SCRATCH/images/
+
+rm 20CRv2c_ls_4var.mp4
+# Get rid of empty images - they make ffmpeg stop processing
+#  These usually come from disc problems in the creation step.
+find 20CRv2c_ls_4var/*.png -type f -empty -delete
+
+ffmpeg -r 24 -pattern_type glob -i 20CRv2c_ls_4var/\*.png -c:v libx264 -threads 16 -preset veryslow -tune film -profile:v high -level 4.2 -pix_fmt yuv420p -b:v 5M -maxrate 5M -bufsize 20M -c:a copy 20CRv2c_ls_4var.mp4
