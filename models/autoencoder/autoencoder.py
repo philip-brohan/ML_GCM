@@ -90,11 +90,14 @@ test_data = test_data.batch(batch_size)
 
 # Add noise to latent vector
 def noise(encoded):
-    encoded = encoded-tf.keras.backend.mean(encoded)
-    encoded = encoded/tf.keras.backend.std(encoded)
     epsilon = tf.keras.backend.random_normal(tf.keras.backend.shape(encoded),
                                              mean=0.0,stddev=0.1)
     return encoded+epsilon
+# Normalise the latent vector
+def stdise(encoded):
+    encoded = encoded-tf.keras.backend.mean(encoded)
+    encoded = encoded/tf.keras.backend.std(encoded)
+    return encoded
 
 # Input placeholder
 original = tf.keras.layers.Input(shape=(79,159,5,), name='encoder_input')
@@ -113,11 +116,16 @@ x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Dropout(0.3)(x)
 # N-dimensional latent space representation
 x = tf.keras.layers.Reshape(target_shape=(9*19*90,))(x)
-encoded = tf.keras.layers.Dense(latent_dim,)(x)
-noisy = tf.keras.layers.Lambda(noise, output_shape=(latent_dim,))(encoded)
+x = tf.keras.layers.Dense(latent_dim,)(x)
+encoded  = tf.keras.layers.Lambda(stdise, output_shape=(latent_dim,))(x)
 
 # Define an encoder model
-encoder = tf.keras.models.Model(original, noisy, name='encoder')
+encoder = tf.keras.models.Model(original, encoded, name='encoder')
+
+# Add a noise layer to make the encoder variational
+noise_i = tf.keras.layers.Input(shape=(latent_dim,), name='noise_input')
+noise_o  = tf.keras.layers.Lambda(noise, output_shape=(latent_dim,))(noise_i)
+noise_m = tf.keras.models.Model(noise_i, noise_o, name='noise_m')
 
 # Decoding layers
 encoded = tf.keras.layers.Input(shape=(latent_dim,), name='decoder_input')
@@ -138,7 +146,11 @@ generator = tf.keras.models.Model(encoded, decoded, name='generator')
 output = generator(encoder(original))
 autoencoder = tf.keras.models.Model(inputs=original, outputs=output, name='autoencoder')
 
-autoencoder.compile(optimizer='adadelta',loss='mean_squared_error')
+# Combine the encoder, the noise, and the generator, into a variational autoencoder
+output_v = generator(noise_m(encoder(original)))
+var_autoencoder = tf.keras.models.Model(inputs=original, outputs=output_v, name='var_autoencoder')
+
+var_autoencoder.compile(optimizer='adadelta',loss='mean_squared_error')
 
 # Save model and history state after every epoch
 history={}
@@ -151,9 +163,10 @@ class CustomSaver(tf.keras.callbacks.Callback):
                          os.getenv('SCRATCH'),epoch)
         if not os.path.isdir(os.path.dirname(save_dir)):
             os.makedirs(os.path.dirname(save_dir))
-        for model in ['autoencoder','encoder','generator']:
+        for model in ['var_autoencoder','autoencoder','encoder','generator']:
             if not os.path.isdir(os.path.dirname("%s/%s" % (save_dir,model))):
                 os.makedirs(os.path.dirname("%s/%s" % (save_dir,model)))
+        tf.keras.models.save_model(var_autoencoder,"%s/var_autoencoder" % save_dir)
         tf.keras.models.save_model(autoencoder,"%s/autoencoder" % save_dir)
         tf.keras.models.save_model(encoder,"%s/encoder" % save_dir)
         tf.keras.models.save_model(generator,"%s/generator" % save_dir)
@@ -167,11 +180,11 @@ class CustomSaver(tf.keras.callbacks.Callback):
 saver = CustomSaver()
 
 # Train the autoencoder
-history=autoencoder.fit(x=tr_data,
-                epochs=n_epochs,
-                steps_per_epoch=n_steps,
-                validation_data=test_data,
-                validation_steps=test_steps,
-                verbose=1,
-                callbacks=[saver])
+history=var_autoencoder.fit(x=tr_data,
+                            epochs=n_epochs,
+                            steps_per_epoch=n_steps,
+                            validation_data=test_data,
+                            validation_steps=test_steps,
+                            verbose=1,
+                            callbacks=[saver])
 
