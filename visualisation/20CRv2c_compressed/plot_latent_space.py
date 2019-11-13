@@ -155,7 +155,21 @@ def three_plot(ax,t2m,u10m,v10m,prmsl,ls):
                                  vmin=-3,
                                  vmax=3,
                                  zorder=1000)
-   
+    # Label with the date
+    ax.text(180/args.zoom-(360/args.zoom)*0.009,
+            90/args.zoom-(180/args.zoom)*0.016,
+            "%04d-%02d-%02d" % (args.year,args.month,args.day),
+            horizontalalignment='right',
+            verticalalignment='top',
+            color='black',
+            bbox=dict(facecolor=(0.6,0.6,0.6,0.5),
+                      edgecolor='black',
+                      boxstyle='round',
+                      pad=0.5),
+            size=14,
+            clip_on=True,
+            zorder=500)
+  
 # Get autoencoded versions of the validation data
 model_save_file=("%s/ML_GCM/autoencoder/"+
                   "Epoch_%04d/autoencoder") % (
