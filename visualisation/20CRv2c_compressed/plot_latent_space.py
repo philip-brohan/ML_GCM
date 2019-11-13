@@ -4,7 +4,7 @@
 # Show the version after compression into a latant space.
 
 import os
-import IRData.opfc as opfc
+import sys
 import IRData.twcr as twcr
 import datetime
 import pickle
@@ -23,10 +23,18 @@ from matplotlib.patches import Rectangle
 from matplotlib.lines import Line2D
 
 sys.path.append('%s/../../lib/' % os.path.dirname(__file__))
-from plots import quantile_normalise_t2m
+from insolation import load_insolation
+from geometry import to_analysis_grid
+from normalise import normalise_insolation
+from normalise import normalise_t2m
+from normalise import unnormalise_t2m
+from normalise import normalise_prmsl
+from normalise import unnormalise_prmsl
+from normalise import normalise_wind
+from normalise import unnormalise_wind
 from plots import plot_cube
 from plots import wind_field
-from plots import get_precip_colours
+from plots import quantile_normalise_t2m
 from plots import draw_lat_lon
 
 from pandas import qcut
@@ -68,323 +76,179 @@ args = parser.parse_args()
 if not os.path.isdir(args.opdir):
     os.makedirs(args.opdir)
 
-
-# Projection for tensors and plotting
-cs=iris.coord_systems.RotatedGeogCS(90,180,0)
-
-# Define a dummy cube to load with the compressed data
-def dummy_cube():
-    # Latitudes cover -90 to 90 with 79 values
-    lat_values=numpy.arange(-90,91,180/78)
-    latitude = iris.coords.DimCoord(lat_values,
-                                    standard_name='latitude',
-                                    units='degrees_north',
-                                    coord_system=cs)
-    # Longitudes cover -180 to 180 with 159 values
-    lon_values=numpy.arange(-180,181,360/158)
-    longitude = iris.coords.DimCoord(lon_values,
-                                     standard_name='longitude',
-                                     units='degrees_east',
-                                     coord_system=cs)
-    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
-    dummy_cube = iris.cube.Cube(dummy_data,
-                               dim_coords_and_dims=[(latitude, 0),
-                                                    (longitude, 1)])
-    return(dummy_cube)
-
-dte=datetime.datetime(args.year,args.month,args.day,
-                      int(args.hour),int(args.hour%1*60))
-
-# Load the latent-space representation, and convert it back into normal space
-model_save_file=("%s/Machine-Learning-experiments/"+
-                  "convolutional_autoencoder_perturbations/"+
-                  "multivariate_uk_centred/saved_models/"+
-                  "Epoch_%04d/generator") % (
-                      os.getenv('SCRATCH'),args.epoch)
-generator=tf.keras.models.load_model(model_save_file,compile=False)
-
-# Load the LS representation - interpolating in time as necesary
-def ls_load_at_timepoint(year,month,day,hour):
-    ls_file=(("%s/Machine-Learning-experiments/datasets/latent_space/"+
-                  "%04d-%02d-%02d:%02d.tfd") %
-                       (os.getenv('SCRATCH'),
-                        year,month,day,hour))
-    sict  = tf.read_file(ls_file)
-    ls = tf.reshape(tf.parse_tensor(sict,numpy.float32),[1,100])
-    result=generator.predict_on_batch(ls)
-    result = tf.reshape(result,[79,159,4])
-    t2m=dummy_cube()
-    t2m.data = tf.reshape(result.numpy()[:,:,0],[79,159]).numpy()
-    t2m = unnormalise_t2m(t2m)
-    prmsl=dummy_cube()
-    prmsl.data = tf.reshape(result.numpy()[:,:,1],[79,159]).numpy()
-    prmsl = unnormalise_prmsl(prmsl)
-    u10m=dummy_cube()
-    u10m.data = tf.reshape(result.numpy()[:,:,2],[79,159]).numpy()
-    u10m = unnormalise_wind(u10m)
-    v10m=dummy_cube()
-    v10m.data = tf.reshape(result.numpy()[:,:,3],[79,159]).numpy()
-    v10m = unnormalise_wind(v10m)
-    return(ls,t2m,prmsl,u10m,v10m)
+# Function to do the multivariate plot
+lsmask=iris.load_cube("%s/fixed_fields/land_mask/opfc_global_2019.nc" % os.getenv('DATADIR'))
+# Random field for the wind noise
+z=pickle.load(open( args.zfile, "rb" ) )
+def three_plot(ax,t2m,u10m,v10m,prmsl,ls):
+    ax.set_xlim(-180,180)
+    ax.set_ylim(-90,90)
+    ax.set_aspect('auto')
+    ax.set_axis_off() # Don't want surrounding x and y axis
+    ax.add_patch(Rectangle((0,0),1,1,facecolor=(0.6,0.6,0.6,1),
+                                               fill=True,zorder=1))
+    # Draw lines of latitude and longitude
+    draw_lat_lon(ax)
+    # Add the continents
+    mask_pc = plot_cube(0.05)   
+    lsmask = iris.load_cube("%s/fixed_fields/land_mask/opfc_global_2019.nc" % os.getenv('SCRATCH'))
+    lsmask = lsmask.regrid(mask_pc,iris.analysis.Linear())
+    lats = lsmask.coord('latitude').points
+    lons = lsmask.coord('longitude').points
+    mask_img = ax.pcolorfast(lons, lats, lsmask.data,
+                             cmap=matplotlib.colors.ListedColormap(
+                                    ((0.4,0.4,0.4,0),
+                                     (0.4,0.4,0.4,1))),
+                             vmin=0,
+                             vmax=1,
+                             alpha=1.0,
+                             zorder=20)
     
-dte_past=datetime.datetime(dte.year,dte.month,dte.day,dte.hour-dte.hour%6)
-dte_next=dte_past+datetime.timedelta(hours=6)
-weight=(dte-dte_past).total_seconds()/(dte_next-dte_past).total_seconds()
-dpast=ls_load_at_timepoint(dte_past.year,dte_past.month,dte_past.day,dte_past.hour)
-dnext=ls_load_at_timepoint(dte_next.year,dte_next.month,dte_next.day,dte_next.hour)
-ls=dnext[0]*weight+dpast[0]*(1-weight)
-t2m=dnext[1]
-t2m.data=dnext[1].data*weight+dpast[1].data*(1-weight)
-prmsl=dnext[2]
-prmsl.data=dnext[2].data*weight+dpast[2].data*(1-weight)
-u10m=dnext[3]
-u10m.data=dnext[3].data*weight+dpast[3].data*(1-weight)
-v10m=dnext[4]
-v10m.data=dnext[4].data*weight+dpast[4].data*(1-weight)
+    # Calculate the wind noise
+    wind_pc=plot_cube(0.2)   
+    cs=iris.coord_systems.RotatedGeogCS(90,180,0)
+    rw=iris.analysis.cartography.rotate_winds(u10m,v10m,cs)
+    u10m = rw[0].regrid(wind_pc,iris.analysis.Linear())
+    v10m = rw[1].regrid(wind_pc,iris.analysis.Linear())
+    seq=(dte-datetime.datetime(2000,1,1)).total_seconds()/3600
+    wind_noise_field=wind_field(u10m,v10m,z,sequence=int(seq*5),epsilon=0.01)
 
+    # Plot the temperature
+    t2m=quantile_normalise_t2m(t2m)
+    t2m_pc=plot_cube(0.05)   
+    t2m = t2m.regrid(t2m_pc,iris.analysis.Linear())
+    # Adjust to show the wind
+    wscale=200
+    s=wind_noise_field.data.shape
+    wind_noise_field.data=qcut(wind_noise_field.data.flatten(),wscale,
+                                 labels=False,
+                                 duplicates='drop').reshape(s)-(wscale-1)/2
 
-mask=iris.load_cube("%s/fixed_fields/land_mask/opfc_global_2019.nc" % os.getenv('DATADIR'))
+    # Plot as a colour map
+    wnf=wind_noise_field.regrid(t2m,iris.analysis.Linear())
+    t2m_img = ax.pcolorfast(lons, lats, t2m.data*1000+wnf.data,
+                            cmap='RdYlBu_r',
+                            alpha=0.8,
+                            vmin=-100,
+                            vmax=1100,
+                            zorder=100)
 
-# Define the figure (page size, background color, resolution, ...
-fig=Figure(figsize=(19.2,10.8),              # Width, Height (inches)
+    # Plot the prmsl
+    prmsl_pc=plot_cube(0.25)   
+    prmsl = prmsl.regrid(prmsl_pc,iris.analysis.Linear())
+    lats = prmsl.coord('latitude').points
+    lons = prmsl.coord('longitude').points
+    lons,lats = numpy.meshgrid(lons,lats)
+    CS=ax.contour(lons, lats, prmsl.data*0.01,
+                               colors='black',
+                               linewidths=0.5,
+                               alpha=1.0,
+                               levels=numpy.arange(870,1050,10),
+                               zorder=200)
+
+    # Overlay the latent-space representation in the SE Pacific
+    x=numpy.linspace(-160,-120,10)
+    y=numpy.linspace(-75,-75+(40*16/18),10)
+    latent_img = ax.pcolorfast(x,y,ls.reshape(10,10),
+                               cmap='viridis',
+                                 alpha=1.0,
+                                 vmin=-3,
+                                 vmax=3,
+                                 zorder=1000)
+   
+# Get autoencoded versions of the validation data
+model_save_file=("%s/ML_GCM/autoencoder/"+
+                  "Epoch_%04d/autoencoder") % (
+                      os.getenv('SCRATCH'),args.epoch)
+autoencoder=tf.keras.models.load_model(model_save_file,compile=False)
+# Also load the encoder (to get the latent state)
+model_save_file=("%s/ML_GCM/autoencoder/"+
+                  "/Epoch_%04d/encoder") % (
+                      os.getenv('SCRATCH'),args.epoch)
+encoder=tf.keras.models.load_model(model_save_file,compile=False)
+
+# Load and compress the data - only at timepoint (i.e. hour%6==0)
+def get_compressed(year,month,day,hour):
+    prmsl=twcr.load('prmsl',datetime.datetime(year,month,day,hour),
+                               version='2c')
+    prmsl=to_analysis_grid(prmsl.extract(iris.Constraint(member=1)))
+    t2m=twcr.load('air.2m',datetime.datetime(year,month,day,hour),
+                               version='2c')
+    t2m=to_analysis_grid(t2m.extract(iris.Constraint(member=1)))
+    u10m=twcr.load('uwnd.10m',datetime.datetime(year,month,day,hour),
+                               version='2c')
+    u10m=to_analysis_grid(u10m.extract(iris.Constraint(member=1)))
+    v10m=twcr.load('vwnd.10m',datetime.datetime(year,month,day,hour),
+                               version='2c')
+    v10m=to_analysis_grid(v10m.extract(iris.Constraint(member=1)))
+    insol=to_analysis_grid(load_insolation(year,month,day,hour))
+
+    # Convert the validation data into tensor format
+    t2m_t = tf.convert_to_tensor(normalise_t2m(t2m.data),numpy.float32)
+    t2m_t = tf.reshape(t2m_t,[79,159,1])
+    prmsl_t = tf.convert_to_tensor(normalise_prmsl(prmsl.data),numpy.float32)
+    prmsl_t = tf.reshape(prmsl_t,[79,159,1])
+    u10m_t = tf.convert_to_tensor(normalise_wind(u10m.data),numpy.float32)
+    u10m_t = tf.reshape(u10m_t,[79,159,1])
+    v10m_t = tf.convert_to_tensor(normalise_wind(v10m.data),numpy.float32)
+    v10m_t = tf.reshape(v10m_t,[79,159,1])
+    insol_t = tf.convert_to_tensor(normalise_insolation(insol.data),numpy.float32)
+    insol_t = tf.reshape(insol_t,[79,159,1])
+
+    ict = tf.concat([t2m_t,prmsl_t,u10m_t,v10m_t,insol_t],2) # Now [79,159,5]
+    ict = tf.reshape(ict,[1,79,159,5])
+    result = autoencoder.predict_on_batch(ict)
+    result = tf.reshape(result,[79,159,5])
+    ls = encoder.predict_on_batch(ict)
+    
+    # Convert the encoded fields back to unnormalised cubes 
+    t2m_r=t2m.copy()
+    t2m_r.data = tf.reshape(result.numpy()[:,:,0],[79,159]).numpy()
+    t2m_r.data = unnormalise_t2m(t2m_r.data)
+    prmsl_r=prmsl.copy()
+    prmsl_r.data = tf.reshape(result.numpy()[:,:,1],[79,159]).numpy()
+    prmsl_r.data = unnormalise_prmsl(prmsl_r.data)
+    u10m_r=u10m.copy()
+    u10m_r.data = tf.reshape(result.numpy()[:,:,2],[79,159]).numpy()
+    u10m_r.data = unnormalise_wind(u10m_r.data)
+    v10m_r=v10m.copy()
+    v10m_r.data = tf.reshape(result.numpy()[:,:,3],[79,159]).numpy()
+    v10m_r.data = unnormalise_wind(v10m_r.data)
+    return {'t2m':t2m_r,'prmsl':prmsl_r,'u10m':u10m_r,'v10m':v10m_r,'ls':ls}
+    
+# Get the compressed data at the selected time
+dte=datetime.datetime(args.year,args.month,args.day,
+                          int(args.hour),int(args.hour%1*60))
+prevt=datetime.datetime(args.year,args.month,args.day,
+                           int(args.hour)-int(args.hour)%6)
+nextt=prevt+datetime.timedelta(hours=6)
+s_previous=get_compressed(prevt.year,prevt.month,prevt.day,prevt.hour)
+s_next=get_compressed(nextt.year,nextt.month,nextt.day,nextt.hour)
+compressed={}
+for var in ('t2m','prmsl','u10m','v10m'):
+   cl=iris.cube.CubeList((s_previous[var],s_next[var])).merge_cube()
+   compressed[var]=cl.interpolate([('time',dte)],iris.analysis.Linear())
+w=(dte-prevt).total_seconds()/(nextt-prevt).total_seconds()
+ls=s_previous['ls']*(1-w)+s_next['ls']*w
+
+# Plot the two fields and a scatterplot for each variable
+fig=Figure(figsize=(19.2,10.8),
            dpi=100,
-           facecolor=(0.5,0.5,0.5,1),
+           facecolor=(0.88,0.88,0.88,1),
            edgecolor=None,
            linewidth=0.0,
-           frameon=False,                # Don't draw a frame
+           frameon=False,
            subplotpars=None,
            tight_layout=None)
-fig.set_frameon(False) 
-# Attach a canvas
 canvas=FigureCanvas(fig)
 
-# Projection for plotting
-cs=iris.coord_systems.RotatedGeogCS(args.pole_latitude,
-                                    args.pole_longitude,
-                                    args.npg_longitude)
-
-def plot_cube(resolution,xmin,xmax,ymin,ymax):
-
-    lat_values=numpy.arange(ymin,ymax+resolution,resolution)
-    latitude = iris.coords.DimCoord(lat_values,
-                                    standard_name='latitude',
-                                    units='degrees_north',
-                                    coord_system=cs)
-    lon_values=numpy.arange(xmin,xmax+resolution,resolution)
-    longitude = iris.coords.DimCoord(lon_values,
-                                     standard_name='longitude',
-                                     units='degrees_east',
-                                     coord_system=cs)
-    dummy_data = numpy.zeros((len(lat_values), len(lon_values)))
-    plot_cube = iris.cube.Cube(dummy_data,
-                               dim_coords_and_dims=[(latitude, 0),
-                                                    (longitude, 1)])
-    return plot_cube
-
-# Make the wind noise
-def wind_field(uw,vw,zf,sequence=None,iterations=50,epsilon=0.003,sscale=1):
-    # Random field as the source of the distortions
-    z=pickle.load(open( zf, "rb" ) )
-    z=z.regrid(uw,iris.analysis.Linear())
-    (width,height)=z.data.shape
-    # Each point in this field has an index location (i,j)
-    #  and a real (x,y) position
-    xmin=numpy.min(uw.coords()[0].points)
-    xmax=numpy.max(uw.coords()[0].points)
-    ymin=numpy.min(uw.coords()[1].points)
-    ymax=numpy.max(uw.coords()[1].points)
-    # Convert between index and real positions
-    def i_to_x(i):
-        return xmin + (i/width) * (xmax-xmin)
-    def j_to_y(j):
-        return ymin + (j/height) * (ymax-ymin)
-    def x_to_i(x):
-        return numpy.minimum(width-1,numpy.maximum(0, 
-                numpy.floor((x-xmin)/(xmax-xmin)*(width-1)))).astype(int)
-    def y_to_j(y):
-        return numpy.minimum(height-1,numpy.maximum(0, 
-                numpy.floor((y-ymin)/(ymax-ymin)*(height-1)))).astype(int)
-    i,j=numpy.mgrid[0:width,0:height]
-    x=i_to_x(i)
-    y=j_to_y(j)
-    # Result is a distorted version of the random field
-    result=z.copy()
-    # Repeatedly, move the x,y points according to the vector field
-    #  and update result with the random field at their locations
-    ss=uw.copy()
-    ss.data=numpy.sqrt(uw.data**2+vw.data**2)
-    if sequence is not None:
-        startsi=numpy.arange(0,iterations,3)
-        endpoints=numpy.tile(startsi,1+(width*height)//len(startsi))
-        endpoints += sequence%iterations
-        endpoints[endpoints>=iterations] -= iterations
-        startpoints=endpoints-25
-        startpoints[startpoints<0] += iterations
-        endpoints=endpoints[0:(width*height)].reshape(width,height)
-        startpoints=startpoints[0:(width*height)].reshape(width,height)
-    else:
-        endpoints=iterations+1 
-        startpoints=-1       
-    for k in range(iterations):
-        x += epsilon*vw.data[i,j]
-        x[x>xmax]=xmax
-        x[x<xmin]=xmin
-        y += epsilon*uw.data[i,j]
-        y[y>ymax]=y[y>ymax]-ymax+ymin
-        y[y<ymin]=y[y<ymin]-ymin+ymax
-        i=x_to_i(x)
-        j=y_to_j(y)
-        update=z.data*ss.data/sscale
-        update[(endpoints>startpoints) & ((k>endpoints) | (k<startpoints))]=0
-        update[(startpoints>endpoints) & ((k>endpoints) & (k<startpoints))]=0
-        result.data[i,j] += update
-    return result
-
-wind_pc=plot_cube(0.2,-180/args.zoom,180/args.zoom,
-                      -90/args.zoom,90/args.zoom)   
-rw=iris.analysis.cartography.rotate_winds(u10m,v10m,cs)
-u10m = rw[0].regrid(wind_pc,iris.analysis.Linear())
-v10m = rw[1].regrid(wind_pc,iris.analysis.Linear())
-seq=(dte-datetime.datetime(2000,1,1)).total_seconds()/3600
-wind_noise_field=wind_field(u10m,v10m,args.zfile,sequence=int(seq*5),epsilon=0.01)
-
-# Define an axes to contain the plot. In this case our axes covers
-#  the whole figure
-ax = fig.add_axes([0,0,1,1])
-ax.set_axis_off() # Don't want surrounding x and y axis
-
-# Lat and lon range (in rotated-pole coordinates) for plot
-ax.set_xlim(-180/args.zoom,180/args.zoom)
-ax.set_ylim(-90/args.zoom,90/args.zoom)
-ax.set_aspect('auto')
-
-# Background
-ax.add_patch(Rectangle((0,0),1,1,facecolor=(0.6,0.6,0.6,1),fill=True,zorder=1))
-
-# Draw lines of latitude and longitude
-for lat in range(-90,95,5):
-    lwd=0.75
-    x=[]
-    y=[]
-    for lon in range(-180,181,1):
-        rp=iris.analysis.cartography.rotate_pole(numpy.array(lon),
-                                                 numpy.array(lat),
-                                                 args.pole_longitude,
-                                                 args.pole_latitude)
-        nx=rp[0]+args.npg_longitude
-        if nx>180: nx -= 360
-        ny=rp[1]
-        if(len(x)==0 or (abs(nx-x[-1])<10 and abs(ny-y[-1])<10)):
-            x.append(nx)
-            y.append(ny)
-        else:
-            ax.add_line(Line2D(x, y, linewidth=lwd, color=(0.4,0.4,0.4,1),
-                               zorder=10))
-            x=[]
-            y=[]
-    if(len(x)>1):        
-        ax.add_line(Line2D(x, y, linewidth=lwd, color=(0.4,0.4,0.4,1),
-                           zorder=10))
-
-for lon in range(-180,185,5):
-    lwd=0.75
-    x=[]
-    y=[]
-    for lat in range(-90,90,1):
-        rp=iris.analysis.cartography.rotate_pole(numpy.array(lon),
-                                                 numpy.array(lat),
-                                                 args.pole_longitude,
-                                                 args.pole_latitude)
-        nx=rp[0]+args.npg_longitude
-        if nx>180: nx -= 360
-        ny=rp[1]
-        if(len(x)==0 or (abs(nx-x[-1])<10 and abs(ny-y[-1])<10)):
-            x.append(nx)
-            y.append(ny)
-        else:
-            ax.add_line(Line2D(x, y, linewidth=lwd, color=(0.4,0.4,0.4,1),
-                               zorder=10))
-            x=[]
-            y=[]
-    if(len(x)>1):        
-        ax.add_line(Line2D(x, y, linewidth=lwd, color=(0.4,0.4,0.4,1),
-                           zorder=10))
-
-# Plot the land mask
-mask_pc=plot_cube(0.05,-180/args.zoom,180/args.zoom,
-                                  -90/args.zoom,90/args.zoom)   
-mask = mask.regrid(mask_pc,iris.analysis.Linear())
-lats = mask.coord('latitude').points
-lons = mask.coord('longitude').points
-mask_img = ax.pcolorfast(lons, lats, mask.data,
-                         cmap=matplotlib.colors.ListedColormap(
-                                ((0.4,0.4,0.4,0),
-                                 (0.4,0.4,0.4,1))),
-                         vmin=0,
-                         vmax=1,
-                         alpha=1.0,
-                         zorder=20)
-
-
-# Plot the T2M
-t2m_pc=plot_cube(0.05,-180/args.zoom,180/args.zoom,
-                      -90/args.zoom,90/args.zoom)   
-t2m = t2m.regrid(t2m_pc,iris.analysis.Linear())
-t2m=quantile_t2m(t2m)
-# Adjust to show the wind
-wscale=200
-s=wind_noise_field.data.shape
-wind_noise_field.data=qcut(wind_noise_field.data.flatten(),wscale,labels=False,
-                             duplicates='drop').reshape(s)-(wscale-1)/2
-
-# Plot as a colour map
-wnf=wind_noise_field.regrid(t2m,iris.analysis.Linear())
-t2m_img = ax.pcolorfast(lons, lats, t2m.data*1000+wnf.data,
-                        cmap='RdYlBu_r',
-                        alpha=0.8,
-                        zorder=100)
-
-# PRMSL contours
-prmsl_pc=plot_cube(0.25,-180/args.zoom,180/args.zoom,
-                         -90/args.zoom,90/args.zoom)   
-prmsl = prmsl.regrid(prmsl_pc,iris.analysis.Linear())
-lats = prmsl.coord('latitude').points
-lons = prmsl.coord('longitude').points
-lons,lats = numpy.meshgrid(lons,lats)
-CS=ax.contour(lons, lats, prmsl.data*0.01,
-                           colors='black',
-                           linewidths=1.0,
-                           alpha=1.0,
-                           levels=numpy.arange(870,1050,10),
-                           zorder=200)
-
-# Label with the date
-ax.text(180/args.zoom-(360/args.zoom)*0.009,
-         90/args.zoom-(180/args.zoom)*0.016,
-         "%04d-%02d-%02d" % (args.year,args.month,args.day),
-         horizontalalignment='right',
-         verticalalignment='top',
-         color='black',
-         bbox=dict(facecolor=(0.6,0.6,0.6,0.8),
-                   edgecolor='black',
-                   boxstyle='round',
-                   pad=0.5),
-         size=14,
-         clip_on=True,
-         zorder=500)
-
-# Overlay the latent-space representation in the SE Pacific
-ax2=fig.add_axes([0.025,0.05,0.15,0.15*16/9])
-ax2.set_xlim(0,10)
-ax2.set_ylim(0,10)
-ax2.set_axis_off() # Don't want surrounding x and y axis
-x=numpy.linspace(0,10,10)
-latent_img = ax2.pcolorfast(x,x,ls.numpy().reshape(10,10),
-                           cmap='viridis',
-                             alpha=1.0,
-                             vmin=-5,
-                             vmax=5,
-                             zorder=1000)
+# Two maps, original and reconstructed
+ax_compressed=fig.add_axes([0,0,1,1])
+three_plot(ax_compressed,compressed['t2m'],
+                         compressed['u10m'],
+                         compressed['v10m'],
+                         compressed['prmsl'],
+                         ls)
 
 # Render the figure as a png
 fig.savefig('%s/%04d%02d%02d%02d%02d.png' % (args.opdir,args.year,
