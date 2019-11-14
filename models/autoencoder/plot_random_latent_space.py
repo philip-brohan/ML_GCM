@@ -28,6 +28,7 @@ from normalise import unnormalise_prmsl
 from normalise import unnormalise_wind
 
 from plots import plot_cube
+from plots import make_wind_seed
 from plots import wind_field
 from plots import quantile_normalise_t2m
 from plots import draw_lat_lon
@@ -35,7 +36,7 @@ from plots import draw_lat_lon
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch",
-                    type=int,required=False,default=10)
+                    type=int,required=False,default=25)
 
 args = parser.parse_args()
 
@@ -105,9 +106,7 @@ cs=iris.coord_systems.RotatedGeogCS(90,180,0)
 rw=iris.analysis.cartography.rotate_winds(u10m,v10m,cs)
 u10m = rw[0].regrid(wind_pc,iris.analysis.Linear())
 v10m = rw[1].regrid(wind_pc,iris.analysis.Linear())
-z=mask.regrid(u10m,iris.analysis.Linear())
-(width,height)=z.data.shape
-z.data=numpy.random.rand(width,height)
+z=make_wind_seed(resolution=0.4)
 wind_noise_field=wind_field(u10m,v10m,z,sequence=None,epsilon=0.01)
 
 # Define an axes to contain the plot. In this case our axes covers
@@ -153,9 +152,11 @@ wind_noise_field.data=qcut(wind_noise_field.data.flatten(),wscale,labels=False,
 
 # Plot as a colour map
 wnf=wind_noise_field.regrid(t2m,iris.analysis.Linear())
-t2m_img = ax.pcolorfast(lons, lats, t2m.data*800+wnf.data,
+t2m_img = ax.pcolorfast(lons, lats, t2m.data*1000+wnf.data,
                         cmap='RdYlBu_r',
                         alpha=0.8,
+                        vmin=-100,
+                        vmax=1100,
                         zorder=100)
 
 # PRMSL contours

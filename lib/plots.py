@@ -455,3 +455,17 @@ def get_precip_colours():
         c.append(1.0)
     cols=cols+cm_data
     return cols    
+
+# Make a random scatter field to seed the wind vectors
+# (the 'z' value needed by 'wind_field').
+# The 'resolution' parameter (in degrees) varies the coarseness of the 
+#  vectors. The 'seed' parameter makes the function deterministic
+#  calling the function with the same value (not none) will give
+#  the same field (needed for videos).
+def make_wind_seed(resolution,seed=None):
+    if seed is not None:
+        numpy.random.seed(seed=seed)
+    z=plot_cube(resolution)
+    (width,height)=z.data.shape
+    z.data=numpy.random.rand(width,height)-0.5
+    return z

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Compare an original weather field with the autoencoder output.
+# Compare an original weather field with the predictor output.
 
 import tensorflow as tf
 tf.enable_eager_execution()
@@ -46,8 +46,11 @@ parser.add_argument("--epoch", help="Epoch",
                     type=int,required=False,default=25)
 args = parser.parse_args()
 
+dte=datetime.datetime(2010,3,12,18)
+
 # Function to do the multivariate plot
-lsmask=iris.load_cube("%s/fixed_fields/land_mask/opfc_global_2019.nc" % os.getenv('DATADIR'))
+lsmask=iris.load_cube("%s/fixed_fields/land_mask/opfc_global_2019.nc" % 
+                                                    os.getenv('SCRATCH'))
 # Random field for the wind noise
 z=make_wind_seed(resolution=0.4)
 def three_plot(ax,t2m,u10m,v10m,prmsl):
@@ -113,22 +116,18 @@ def three_plot(ax,t2m,u10m,v10m,prmsl):
                                levels=numpy.arange(870,1050,10),
                                zorder=200)
    
-# Load the validation data
-prmsl=twcr.load('prmsl',datetime.datetime(2010,3,12,18),
-                           version='2c')
+# Load the source data
+prmsl=twcr.load('prmsl',dte,version='2c')
 prmsl=to_analysis_grid(prmsl.extract(iris.Constraint(member=1)))
-t2m=twcr.load('air.2m',datetime.datetime(2010,3,12,18),
-                           version='2c')
+t2m=twcr.load('air.2m',dte,version='2c')
 t2m=to_analysis_grid(t2m.extract(iris.Constraint(member=1)))
-u10m=twcr.load('uwnd.10m',datetime.datetime(2010,3,12,18),
-                           version='2c')
+u10m=twcr.load('uwnd.10m',dte,version='2c')
 u10m=to_analysis_grid(u10m.extract(iris.Constraint(member=1)))
-v10m=twcr.load('vwnd.10m',datetime.datetime(2010,3,12,18),
-                           version='2c')
+v10m=twcr.load('vwnd.10m',dte,version='2c')
 v10m=to_analysis_grid(v10m.extract(iris.Constraint(member=1)))
-insol=to_analysis_grid(load_insolation(2010,3,12,18))
+insol=to_analysis_grid(load_insolation(dte.year,dte.month,dte.day,dte.hour))
 
-# Convert the validation data into tensor format
+# Convert the source data into tensor format
 t2m_t = tf.convert_to_tensor(normalise_t2m(t2m.data),numpy.float32)
 t2m_t = tf.reshape(t2m_t,[79,159,1])
 prmsl_t = tf.convert_to_tensor(normalise_prmsl(prmsl.data),numpy.float32)
@@ -140,9 +139,9 @@ v10m_t = tf.reshape(v10m_t,[79,159,1])
 insol_t = tf.convert_to_tensor(normalise_insolation(insol.data),numpy.float32)
 insol_t = tf.reshape(insol_t,[79,159,1])
 
-# Get autoencoded versions of the validation data
-model_save_file=("%s/ML_GCM/autoencoder/"+
-                  "Epoch_%04d/autoencoder") % (
+# Get predicted versions of the target data
+model_save_file=("%s/ML_GCM/predictor/"+
+                  "Epoch_%04d/predictor") % (
                       os.getenv('SCRATCH'),args.epoch)
 autoencoder=tf.keras.models.load_model(model_save_file,compile=False)
 ict = tf.concat([t2m_t,prmsl_t,u10m_t,v10m_t,insol_t],2) # Now [79,159,5]
@@ -150,7 +149,7 @@ ict = tf.reshape(ict,[1,79,159,5])
 result = autoencoder.predict_on_batch(ict)
 result = tf.reshape(result,[79,159,5])
 
-# Convert the encoded fields back to unnormalised cubes 
+# Convert the predicted fields back to unnormalised cubes 
 t2m_r=t2m.copy()
 t2m_r.data = tf.reshape(result.numpy()[:,:,0],[79,159]).numpy()
 t2m_r.data = unnormalise_t2m(t2m_r.data)
@@ -163,6 +162,17 @@ u10m_r.data = unnormalise_wind(u10m_r.data)
 v10m_r=v10m.copy()
 v10m_r.data = tf.reshape(result.numpy()[:,:,3],[79,159]).numpy()
 v10m_r.data = unnormalise_wind(v10m_r.data)
+
+# Load the actual data for mthe target time
+dte2=dte+datetime.timedelta(hours=6)
+prmsl=twcr.load('prmsl',dte2,version='2c')
+prmsl=to_analysis_grid(prmsl.extract(iris.Constraint(member=1)))
+t2m=twcr.load('air.2m',dte2,version='2c')
+t2m=to_analysis_grid(t2m.extract(iris.Constraint(member=1)))
+u10m=twcr.load('uwnd.10m',dte2,version='2c')
+u10m=to_analysis_grid(u10m.extract(iris.Constraint(member=1)))
+v10m=twcr.load('vwnd.10m',dte2,version='2c')
+v10m=to_analysis_grid(v10m.extract(iris.Constraint(member=1)))
 
 # Plot the two fields and a scatterplot for each variable
 fig=Figure(figsize=(9.6*1.2,10.8),
