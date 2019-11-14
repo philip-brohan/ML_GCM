@@ -166,7 +166,16 @@ predictor = tf.keras.models.Model(inputs=original, outputs=output, name='predict
 output_v = generator(noise_m(encoder(original)))
 var_predictor = tf.keras.models.Model(inputs=original, outputs=output_v, name='var_predictor')
 
-var_predictor.compile(optimizer='adadelta',loss='mean_squared_error')
+# Custom loss function to emphasise the pressures
+def custom_loss():
+    def loss(y_true, y_pred):
+        s_true = tf.concat([y_true[:,:,0],y_true[:,:,1]*3,y_true[:,:,2],y_true[:,:,3],y_true[:,:,4]],2)
+        s_pred = tf.concat([y_pred[:,:,0],y_pred[:,:,1]*3,y_pred[:,:,2],y_pred[:,:,3],y_pred[:,:,4]],2)
+#        y_pred[:,:,:,1] = tf.math.multiply(y_pred[:,:,:,1],3)
+        return tf.keras.losses.MSE(s_true,s_pred)
+    return loss
+
+var_predictor.compile(optimizer='adadelta',loss=custom_loss())
 
 # Save model and history state after every epoch
 history={}
