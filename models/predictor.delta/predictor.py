@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 # +6hr predictor for 20CRv2c fields.
+# Do the fit ion the field changes.
 
 import os
 import sys
@@ -15,7 +16,7 @@ from glob import glob
 n_epochs=26
 
 # How big a latent space
-latent_dim=200
+latent_dim=100
 
 # Target data setup
 buffer_size=100
@@ -68,6 +69,11 @@ def load_tensor(file_name):
     ict = tf.reshape(ict,[79,159,5])
     return ict
 
+# Make a tensor of differences
+def diff_tensor(file_name):
+   f2=tf.strings.regex_replace(file_name,'\+6h/','')
+   return load_tensor(file_name)-load_tensor(f2)
+
 tr_source = tr_data.map(load_tensor)
 
 # Repeat but with the +6hr data
@@ -78,7 +84,7 @@ t2m_files=glob("%s/*.tfd" % output_file_dir)
 n_steps=len(t2m_files)
 tr_tfd = tf.constant(t2m_files)
 tr_data = Dataset.from_tensor_slices(tr_tfd).repeat(n_epochs)
-tr_target = tr_data.map(load_tensor)
+tr_target = tr_data.map(diff_tensor)
 
 tr_data = Dataset.zip((tr_source, tr_target))
 tr_data = tr_data.shuffle(buffer_size).batch(batch_size)
@@ -99,7 +105,7 @@ t2m_files=glob("%s/*.tfd" % output_file_dir)
 test_steps=len(t2m_files)
 test_tfd = tf.constant(t2m_files)
 test_data = Dataset.from_tensor_slices(test_tfd).repeat(n_epochs)
-test_target = test_data.map(load_tensor)
+test_target = test_data.map(diff_tensor)
 
 test_data = Dataset.zip((test_source, test_target))
 test_data = test_data.batch(batch_size)
@@ -114,6 +120,10 @@ def stdise(encoded):
     encoded = encoded-tf.keras.backend.mean(encoded)
     encoded = encoded/tf.keras.backend.std(encoded)
     return encoded
+
+# Convert state into state change
+def sdelta(state):
+    return state-original
 
 # Input placeholder
 original = tf.keras.layers.Input(shape=(79,159,5,), name='encoder_input')
@@ -153,7 +163,12 @@ x = tf.keras.layers.Conv2DTranspose(30, (3, 3),  strides= (2,2), padding='valid'
 x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Conv2DTranspose(10, (3, 3),  strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
-decoded = tf.keras.layers.Conv2D(5, (3, 3), padding='same')(x) # Will be 75x159x5 
+decoded = tf.keras.layers.Conv2D(5, (3, 3), padding='same')(x) # Will be 75x159x5
+
+# difference the result 
+diff_i = tf.keras.layers.Input(shape=(79,159,5,), name='diff_input')
+diff_o = tf.keras.layers.Lambda(sdelta,output_shape=(79,159,5,))(diff_i)
+diff_m = tf.keras.models.Model(diff_i, diff_o, name='diff_m')
 
 # Define a generator (decoder) model
 generator = tf.keras.models.Model(encoded, decoded, name='generator')
@@ -163,7 +178,7 @@ output = generator(encoder(original))
 predictor = tf.keras.models.Model(inputs=original, outputs=output, name='predictor')
 
 # Combine the encoder, the noise, and the generator, into a variational predictor
-output_v = generator(noise_m(encoder(original)))
+output_v = diff_m(generator(noise_m(encoder(original))))
 var_predictor = tf.keras.models.Model(inputs=original, outputs=output_v, name='var_predictor')
 
 # Custom loss function to emphasise the pressures
@@ -174,7 +189,7 @@ def custom_loss():
         e_uwnd  = tf.keras.losses.MSE(y_true[:,:,:,2],y_pred[:,:,:,2])
         e_vwnd  = tf.keras.losses.MSE(y_true[:,:,:,3],y_pred[:,:,:,3])
         e_insol = tf.keras.losses.MSE(y_true[:,:,:,4],y_pred[:,:,:,4])
-        return e_t2m+e_prmsl*2+e_uwnd+e_vwnd+e_insol
+        return e_t2m+e_prmsl+e_uwnd+e_vwnd+e_insol
     return loss
 
 var_predictor.compile(optimizer='adadelta',loss=custom_loss())
@@ -185,7 +200,7 @@ history['loss']=[]
 history['val_loss']=[]
 class CustomSaver(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
-        save_dir=("%s/ML_GCM/predictor/"+
+        save_dir=("%s/ML_GCM/predictor.delta/"+
                    "Epoch_%04d") % (
                          os.getenv('SCRATCH'),epoch)
         if not os.path.isdir(os.path.dirname(save_dir)):
@@ -199,7 +214,7 @@ class CustomSaver(tf.keras.callbacks.Callback):
         tf.keras.models.save_model(generator,"%s/generator" % save_dir)
         history['loss'].append(logs['loss'])
         history['val_loss'].append(logs['val_loss'])
-        history_file=("%s/ML_GCM/predictor/"+
+        history_file=("%s/ML_GCM/predictor.delta/"+
                       "history_to_%04d.pkl") % (
                          os.getenv('SCRATCH'),epoch)
         pickle.dump(history, open(history_file, "wb"))
