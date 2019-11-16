@@ -170,14 +170,27 @@ var_predictor = tf.keras.models.Model(inputs=original, outputs=output_v, name='v
 def custom_loss():
     def loss(y_true, y_pred):
         e_t2m   = tf.keras.losses.MSE(y_true[:,:,:,0],y_pred[:,:,:,0])
+        v_t2m   = tf.math.reduce_std(y_true[:,:,:,0])/tf.math.reduce_std(y_pred[:,:,:,0])
+        v_t2m   = tf.math.maximum(v_t2m,1/v_t2m)
         e_prmsl = tf.keras.losses.MSE(y_true[:,:,:,1],y_pred[:,:,:,1])
+        v_prmsl = tf.math.reduce_std(y_true[:,:,:,1])/tf.math.reduce_std(y_pred[:,:,:,1])
+        v_prmsl = tf.math.maximum(v_prmsl,1/v_prmsl)
         e_uwnd  = tf.keras.losses.MSE(y_true[:,:,:,2],y_pred[:,:,:,2])
+        v_uwnd  = tf.math.reduce_std(y_true[:,:,:,2])/tf.math.reduce_std(y_pred[:,:,:,2])
+        v_uwnd  = tf.math.maximum(v_uwnd,1/v_uwnd)
         e_vwnd  = tf.keras.losses.MSE(y_true[:,:,:,3],y_pred[:,:,:,3])
+        v_vwnd  = tf.math.reduce_std(y_true[:,:,:,3])/tf.math.reduce_std(y_pred[:,:,:,3])
+        v_vwnd  = tf.math.maximum(v_vwnd,1/v_vwnd)
         e_insol = tf.keras.losses.MSE(y_true[:,:,:,4],y_pred[:,:,:,4])
-        return e_t2m+e_prmsl*2+e_uwnd+e_vwnd+e_insol
+        v_insol = tf.math.reduce_std(y_true[:,:,:,4])/tf.math.reduce_std(y_pred[:,:,:,4])
+        v_insol = tf.math.maximum(v_insol,1/v_insol)
+        return (e_t2m*v_t2m+e_prmsl*v_prmsl+
+                e_uwnd*v_uwnd+e_vwnd*v_vwnd+
+                e_insol*v_insol)
     return loss
 
-var_predictor.compile(optimizer='adadelta',loss=custom_loss())
+var_predictor.compile(optimizer='adadelta',
+                      loss=custom_loss())
 
 # Save model and history state after every epoch
 history={}
