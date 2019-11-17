@@ -140,7 +140,7 @@ insol_t = tf.convert_to_tensor(normalise_insolation(insol.data),numpy.float32)
 insol_t = tf.reshape(insol_t,[79,159,1])
 
 # Get predicted versions of the target data
-model_save_file=("%s/ML_GCM/predictor/"+
+model_save_file=("%s/ML_GCM/predictor.delta/"+
                   "Epoch_%04d/predictor") % (
                       os.getenv('SCRATCH'),args.epoch)
 autoencoder=tf.keras.models.load_model(model_save_file,compile=False)

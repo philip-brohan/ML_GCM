@@ -55,12 +55,12 @@ state_v = tf.concat([t2m,prmsl,u10m,v10m,insol],2) # Now [79,159,5]
 state_v = tf.reshape(state_v,[1,79,159,5])
 
 # Load the predictor
-model_save_file=("%s/ML_GCM/predictor/"+
+model_save_file=("%s/ML_GCM/predictor.delta/"+
                   "Epoch_%04d/predictor") % (
                       os.getenv('SCRATCH'),epoch)
 predictor=tf.keras.models.load_model(model_save_file,compile=False)
 # Also load the encoder (to get the latent state)
-model_save_file=("%s/ML_GCM/predictor/"+
+model_save_file=("%s/ML_GCM/predictor.delta/"+
                   "Epoch_%04d/encoder") % (
                       os.getenv('SCRATCH'),epoch)
 encoder=tf.keras.models.load_model(model_save_file,compile=False)

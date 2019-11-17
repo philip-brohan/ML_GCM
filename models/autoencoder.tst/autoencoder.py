@@ -91,7 +91,7 @@ test_data = test_data.batch(batch_size)
 # Add noise to latent vector
 def noise(encoded):
     epsilon = tf.keras.backend.random_normal(tf.keras.backend.shape(encoded),
-                                             mean=0.0,stddev=0.5)
+                                             mean=0.0,stddev=0.2)
     return encoded+epsilon
 # Normalise the latent vector
 def stdise(encoded):
@@ -105,17 +105,17 @@ original = tf.keras.layers.Input(shape=(79,159,5,), name='encoder_input')
 x = tf.keras.layers.Conv2D(5, (3, 3), padding='same')(original)
 x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(10, (3, 3), strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Conv2D(15, (3, 3), strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(30, (3, 3), strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Conv2D(45, (3, 3), strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(90, (3, 3), strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Conv2D(135, (3, 3), strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
 x = tf.keras.layers.Dropout(0.3)(x)
 # N-dimensional latent space representation
-x = tf.keras.layers.Reshape(target_shape=(9*19*90,))(x)
+x = tf.keras.layers.Reshape(target_shape=(9*19*135,))(x)
 x = tf.keras.layers.Dense(latent_dim,)(x)
 encoded  = tf.keras.layers.Lambda(stdise, output_shape=(latent_dim,))(x)
 
@@ -129,13 +129,13 @@ noise_m = tf.keras.models.Model(noise_i, noise_o, name='noise_m')
 
 # Decoding layers
 encoded = tf.keras.layers.Input(shape=(latent_dim,), name='decoder_input')
-x = tf.keras.layers.Dense(9*19*90,)(encoded)
-x = tf.keras.layers.Reshape(target_shape=(9,19,90,))(x)
-x = tf.keras.layers.Conv2DTranspose(90, (3, 3),  strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Dense(9*19*135,)(encoded)
+x = tf.keras.layers.Reshape(target_shape=(9,19,135,))(x)
+x = tf.keras.layers.Conv2DTranspose(135, (3, 3),  strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Conv2DTranspose(30, (3, 3),  strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Conv2DTranspose(45, (3, 3),  strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Conv2DTranspose(10, (3, 3),  strides= (2,2), padding='valid')(x)
+x = tf.keras.layers.Conv2DTranspose(15, (3, 3),  strides= (2,2), padding='valid')(x)
 x = tf.keras.layers.ELU()(x)
 decoded = tf.keras.layers.Conv2D(5, (3, 3), padding='same')(x) # Will be 75x159x5 
 

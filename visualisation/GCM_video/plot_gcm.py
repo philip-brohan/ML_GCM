@@ -229,7 +229,8 @@ ax2.set_xlim(0,10)
 ax2.set_ylim(0,10)
 ax2.set_axis_off() # Don't want surrounding x and y axis
 x=numpy.linspace(0,10,10)
-latent_img = ax2.pcolorfast(x,x,numpy.reshape(ls,(10,10)),
+y=numpy.linspace(0,10,20)
+latent_img = ax2.pcolorfast(x,x,numpy.reshape(ls,(10,20)),
                            cmap='viridis',
                              alpha=1.0,
                              vmin=-3,
