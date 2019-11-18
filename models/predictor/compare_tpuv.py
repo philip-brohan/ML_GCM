@@ -43,7 +43,7 @@ from plots import draw_lat_lon
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch",
-                    type=int,required=False,default=25)
+                    type=int,required=False,default=10)
 args = parser.parse_args()
 
 dte=datetime.datetime(2010,3,12,18)

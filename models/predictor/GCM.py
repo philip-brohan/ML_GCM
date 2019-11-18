@@ -67,7 +67,7 @@ encoder=tf.keras.models.load_model(model_save_file,compile=False)
 
 # Run forward in 6-hour increments
 current=dtstart
-while current<dtstart+datetime.timedelta(days=31):
+while current<dtstart+datetime.timedelta(days=365):
     print(current)
     current += datetime.timedelta(hours=6)
     latent_s = encoder.predict_on_batch(state_v)

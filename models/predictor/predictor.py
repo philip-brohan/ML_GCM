@@ -12,10 +12,10 @@ import numpy
 from glob import glob
 
 # How many epochs to train for
-n_epochs=26
+n_epochs=11
 
 # How big a latent space
-latent_dim=200
+latent_dim=100
 
 # Target data setup
 buffer_size=100
@@ -107,7 +107,7 @@ test_data = test_data.batch(batch_size)
 # Add noise to latent vector
 def noise(encoded):
     epsilon = tf.keras.backend.random_normal(tf.keras.backend.shape(encoded),
-                                             mean=0.0,stddev=0.2)
+                                             mean=0.0,stddev=0.1)
     return encoded+epsilon
 # Normalise the latent vector
 def stdise(encoded):
