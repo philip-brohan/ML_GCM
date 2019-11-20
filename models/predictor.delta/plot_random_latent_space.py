@@ -69,8 +69,8 @@ model_save_file=("%s/ML_GCM/predictor.delta/"+
 generator=tf.keras.models.load_model(model_save_file,compile=False)
 
 # Random latent state
-ls=tf.convert_to_tensor(numpy.random.normal(size=200),numpy.float32)
-ls = tf.reshape(ls,[1,200])
+ls=tf.convert_to_tensor(numpy.random.normal(size=100),numpy.float32)
+ls = tf.reshape(ls,[1,100])
 result=generator.predict_on_batch(ls)
 result = tf.reshape(result,[79,159,5])
 t2m=dummy_cube()
@@ -188,8 +188,8 @@ ax2.set_xlim(0,10)
 ax2.set_ylim(0,10)
 ax2.set_axis_off() # Don't want surrounding x and y axis
 x=numpy.linspace(0,10,10)
-y=numpy.linspace(0,10,20)
-latent_img = ax2.pcolorfast(x,y,ls.numpy().reshape(10,20),
+y=numpy.linspace(0,10,10)
+latent_img = ax2.pcolorfast(x,y,ls.numpy().reshape(10,10),
                            cmap='viridis',
                              alpha=1.0,
                              vmin=-3,

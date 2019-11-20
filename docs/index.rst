@@ -17,6 +17,7 @@ Weather Forecasting without the difficult bits
 
 Modern weather-forecast models are amazing: amazingly powerful, amazingly accurate - amazingly complicated, amazingly expensive to run and to develop, amazingly difficult to use and to experiment with. Quite often, I'd rather have something less amazing, but much faster and easier to use. Modern machine learning methods offer sophisticated statistical approximators even to very complex systems like the weather, and we now have hundreds of years of reanalysis output to train them on. How good a model can we build without using any physics, dynamics, chemistry, etc. at all?
 
+
 .. raw:: html
 
     <center>
@@ -30,6 +31,22 @@ Modern weather-forecast models are amazing: amazingly powerful, amazingly accura
    :maxdepth: 1
 
     Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c <visualisation/20CRv2c_global_analysis/index>
+
+
+.. raw:: html
+
+    <center>
+    <table><tr><td><center>
+    <iframe src="https://player.vimeo.com/video/369615958?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
+    </table>
+    </center>
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+    Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space. <visualisation/20CRv2c_latent_space/index>
+
 
 .. toctree::
    :titlesonly:

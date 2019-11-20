@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 # +6hr predictor for 20CRv2c fields.
-# Do the fit ion the field changes.
+# Do the fit on the field changes.
 
 import os
 import sys
@@ -16,7 +16,7 @@ from glob import glob
 n_epochs=26
 
 # How big a latent space
-latent_dim=200
+latent_dim=100
 
 # Target data setup
 buffer_size=100
@@ -32,6 +32,8 @@ tr_tfd = tf.constant(t2m_files)
 
 # Create TensorFlow Dataset object from the file names
 tr_data = Dataset.from_tensor_slices(tr_tfd).repeat(n_epochs)
+
+epoch_count=1
 
 # Make a 5-variable tensor including the insolation field
 def load_tensor(file_name):
@@ -113,7 +115,7 @@ test_data = test_data.batch(batch_size)
 # Add noise to latent vector
 def noise(encoded):
     epsilon = tf.keras.backend.random_normal(tf.keras.backend.shape(encoded),
-                                             mean=0.0,stddev=0.2)
+                                             mean=0.0,stddev=1/epoch_count)
     return encoded+epsilon
 # Normalise the latent vector
 def stdise(encoded):
@@ -230,6 +232,8 @@ class CustomSaver(tf.keras.callbacks.Callback):
                       "history_to_%04d.pkl") % (
                          os.getenv('SCRATCH'),epoch)
         pickle.dump(history, open(history_file, "wb"))
+        global epoch_count
+        epoch_count += 1
         
 saver = CustomSaver()
 
