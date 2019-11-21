@@ -59,6 +59,13 @@ Modern weather-forecast models are amazing: amazingly powerful, amazingly accura
    :titlesonly:
    :maxdepth: 1
 
+   A variational autoencoder <models/autoencoder/index>
+   
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
    Small Print <credits>
 
 This document and the data associated with it are crown copyright (2019) and licensed under the terms of the `Open Government Licence <https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/>`_. All code included is licensed under the terms of the `GNU Lesser General Public License <https://www.gnu.org/licenses/lgpl.html>`_.
