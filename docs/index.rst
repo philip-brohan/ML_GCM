@@ -60,6 +60,7 @@ Modern weather-forecast models are amazing: amazingly powerful, amazingly accura
    :maxdepth: 1
 
    A variational autoencoder <models/autoencoder/index>
+   A generative model <models/generator/generator>
    A +6hr predictor <models/predictor/index>
    
 
