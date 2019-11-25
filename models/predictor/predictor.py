@@ -12,7 +12,7 @@ import numpy
 from glob import glob
 
 # How many epochs to train for
-n_epochs=11
+n_epochs=26
 
 # How big a latent space
 latent_dim=100
