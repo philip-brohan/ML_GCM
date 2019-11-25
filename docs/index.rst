@@ -62,6 +62,7 @@ Modern weather-forecast models are amazing: amazingly powerful, amazingly accura
    A variational autoencoder <models/autoencoder/index>
    A generative model <models/generator/generator>
    A +6hr predictor <models/predictor/index>
+   A Machine-Learning GCM using the +6hr predictor <models/GCM/index>
    
 
 .. toctree::
