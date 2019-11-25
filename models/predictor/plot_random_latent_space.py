@@ -36,7 +36,7 @@ from plots import draw_lat_lon
 import argparse
 parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch",
-                    type=int,required=False,default=10)
+                    type=int,required=False,default=25)
 
 args = parser.parse_args()
 
