@@ -16,7 +16,7 @@
     <script type="text/javascript" src="_static/language_data.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Visualising the Met Office Global Analysis" href="visualisation/MO_global_analysis/index.html" /> 
+    <link rel="next" title="Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis" href="visualisation/MO_global_analysis/index.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -25,7 +25,7 @@
           <a href="genindex.html" title="General Index"
              accesskey="I">index</a></li>
         <li class="right" >
-          <a href="visualisation/MO_global_analysis/index.html" title="Visualising the Met Office Global Analysis"
+          <a href="visualisation/MO_global_analysis/index.html" title="Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis"
              accesskey="N">next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">ML GCM</a> &#187;</li> 
       </ul>
@@ -41,6 +41,24 @@
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="data/download.html">Download training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/autoencoder/index.html">A variational autoencoder</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/generator/generator.html">A generative model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/predictor/index.html">A +6hr predictor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="credits.html">Small Print</a></li>
@@ -72,7 +90,10 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
 <li class="toctree-l1"><a class="reference internal" href="visualisation/MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
 </ul>
 </div>
-<p>Modern weather-forecast models are amazing: amazingly powerful, amazingly accurate - amazingly complicated, amazingly expensive to run and to develop, amazingly difficult to use and to experiment with. Quite often, I’d rather have something less amazing, but much faster and easier to use. Modern machine learning methods offer sophisticated statistical approximators even to very complex systems like the weather, and we now have hundreds of years of reanalysis output to train them on. How good a model can we build without using any physics, dynamics, chemistry, etc. at all?</p>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/Unified_Model">Modern weather-forecast models</a> are amazing: amazingly powerful, amazingly accurate - amazingly complicated, amazingly expensive to run and to develop, amazingly difficult to use and to experiment with. Quite often, I’d rather have something less amazing, but much faster and easier to use. Modern <a class="reference external" href="https://en.wikipedia.org/wiki/Machine_learning">machine learning</a> methods offer sophisticated statistical approximators even to very complex systems like the weather, and we now have hundreds of years of reanalysis output to train them on. How good a model can we build without using any physics, dynamics, chemistry, etc. at all?</p>
+<p>My ambition here is to build a <a class="reference external" href="https://en.wikipedia.org/wiki/General_circulation_model">General Circulation Model (GCM)</a> using <em>only</em> machine learning (ML) methods - no hand-specified physics, dynamics, chemistry etc. at all. To that end I’m going to take an existing model, and train a machine learning system to emulate it - the ML version will be less capable as a model of the atmosphere, but should make up for this by being <em>much</em> faster, and easier to use. A <a class="reference external" href="https://github.com/philip-brohan/weather2weather">previous experiment along these lines</a>
+had <a class="reference external" href="https://vimeo.com/275778137">limited success</a> but did suggest that good results were possible given the right model architecture.</p>
+<p>It would be nice to use the <a class="reference external" href="https://en.wikipedia.org/wiki/Unified_Model">Met Office UM</a> (see video above) as the model to be emulated, but for a first attempt I’m going to pick an easier target:</p>
 <center>
 <table><tr><td><center>
 <iframe src="https://player.vimeo.com/video/369615737?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
@@ -80,6 +101,44 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
 </center><div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+</div>
+<p>The <a class="reference external" href="https://www.esrl.noaa.gov/psd/data/20thC_Rean/">Twentieth Century Reanalysis</a> <a class="reference external" href="https://www.esrl.noaa.gov/psd/data/gridded/data.20thC_ReanV2c.html">version 2c (20CRv2c)</a> provides data every 6-hours on a 2-degree grid, for the past 150+ years. So this is consistent data, at a manageable volume, for a long period. (I have used 20CRv2c ensemble member 1 data from 1969-2005 as training data, and 2006-on as validation).</p>
+<p>I chose to look at 4 near-surface variables: 2-meter air temperature, mean-sea-level-presure, meridional wind and zonal wind. (Precipitation presents too many complications for a first attempt, so not used here).</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="data/download.html">Download training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/autoencoder/index.html">A variational autoencoder</a></li>
+</ul>
+</div>
+<center>
+<table><tr><td><center>
+<iframe src="https://player.vimeo.com/video/369615958?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
+</table>
+</center><div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+</div>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="models/generator/generator.html">A generative model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/predictor/index.html">A +6hr predictor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="models/GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+</div>
+<center>
+<table><tr><td><center>
+<iframe src="https://player.vimeo.com/video/371672143?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
+</table>
+</center><div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 </div>
 <div class="toctree-wrapper compound">
@@ -103,7 +162,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
           <a href="genindex.html" title="General Index"
              >index</a></li>
         <li class="right" >
-          <a href="visualisation/MO_global_analysis/index.html" title="Visualising the Met Office Global Analysis"
+          <a href="visualisation/MO_global_analysis/index.html" title="Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis"
              >next</a> |</li>
         <li class="nav-item nav-item-0"><a href="#">ML GCM</a> &#187;</li> 
       </ul>

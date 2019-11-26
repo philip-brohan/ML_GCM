@@ -45,8 +45,20 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../visualisation/MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
 </ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
 <ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+<li class="toctree-l1 current"><a class="reference internal" href="../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../data/download.html">Download training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../models/autoencoder/index.html">A variational autoencoder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/generator/generator.html">A generative model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../models/predictor/index.html">A +6hr predictor</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../credits.html">Small Print</a></li>
@@ -69,7 +81,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
             
   <div class="section" id="plotting-utilities-library">
 <h1>Plotting utilities library<a class="headerlink" href="#plotting-utilities-library" title="Permalink to this headline">¶</a></h1>
-<p>This library file contains five functions:</p>
+<p>This library file contains six functions:</p>
 <dl class="docutils">
 <dt>quantile_normalise_t2m:</dt>
 <dd>Converts a cube of T2m in kelvin to a cube of approximately on the range 0-1. If the cube is on the conventional equiangular projectionj (pole at 90N), then the cube will have an approximately flat distribution (each value occurs the same number of times. This is convenient for colourmap plotting.</dd>
@@ -77,6 +89,8 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
 <dd>Generate an iris cube with the given resolution, range and pole location (data are all zero). Most useful as a common arrangement to regrid other cubes onto.</dd>
 <dt>wind_field:</dt>
 <dd>Take a field of white noise, and advect it along with a wind field. This turns the speckles into stripes in the direction of the wind. They can be made to move from frame to frame by advecting most them a little more each timestep (and resetting a few of them to zero advection)</dd>
+<dt>make_wind_seed:</dt>
+<dd>Make the field of white noise needed by the ‘wind_field’ function.</dd>
 <dt>draw_lat_lon:</dt>
 <dd>Draw lines of latitude and longitude (copes with rotated poles).</dd>
 <dt>get_precip_colours:</dt>
@@ -539,6 +553,20 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
         <span class="n">c</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mf">1.0</span><span class="p">)</span>
     <span class="n">cols</span><span class="o">=</span><span class="n">cols</span><span class="o">+</span><span class="n">cm_data</span>
     <span class="k">return</span> <span class="n">cols</span>    
+
+<span class="c1"># Make a random scatter field to seed the wind vectors</span>
+<span class="c1"># (the &#39;z&#39; value needed by &#39;wind_field&#39;).</span>
+<span class="c1"># The &#39;resolution&#39; parameter (in degrees) varies the coarseness of the </span>
+<span class="c1">#  vectors. The &#39;seed&#39; parameter makes the function deterministic</span>
+<span class="c1">#  calling the function with the same value (not none) will give</span>
+<span class="c1">#  the same field (needed for videos).</span>
+<span class="k">def</span> <span class="nf">make_wind_seed</span><span class="p">(</span><span class="n">resolution</span><span class="p">,</span><span class="n">seed</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+    <span class="k">if</span> <span class="n">seed</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">seed</span><span class="p">(</span><span class="n">seed</span><span class="o">=</span><span class="n">seed</span><span class="p">)</span>
+    <span class="n">z</span><span class="o">=</span><span class="n">plot_cube</span><span class="p">(</span><span class="n">resolution</span><span class="p">)</span>
+    <span class="p">(</span><span class="n">width</span><span class="p">,</span><span class="n">height</span><span class="p">)</span><span class="o">=</span><span class="n">z</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span>
+    <span class="n">z</span><span class="o">.</span><span class="n">data</span><span class="o">=</span><span class="n">numpy</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="n">width</span><span class="p">,</span><span class="n">height</span><span class="p">)</span><span class="o">-</span><span class="mf">0.5</span>
+    <span class="k">return</span> <span class="n">z</span>
 </pre></div>
 </div>
 </div>

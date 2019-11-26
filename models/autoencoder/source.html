@@ -1,0 +1,305 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Source code for the variational autoencoder &#8212; Machine Learning GCM</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Source code for the autoencoder validation" href="validation_source.html" />
+    <link rel="prev" title="A variational autoencoder for 20CR" href="index.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="validation_source.html" title="Source code for the autoencoder validation"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="A variational autoencoder for 20CR"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../visualisation/20CRv2c_latent_space/index.html" >Small data: 20CRv2c after compression into a 100-dimensional latent space</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" accesskey="U">A variational autoencoder for 20CR</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/Weather-Network.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="index.html">A variational autoencoder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../generator/generator.html">A generative model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../predictor/index.html">A +6hr predictor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/ML_GCM">Get the source code</a></h3>
+
+<a href="https://github.com/philip-brohan/ML_GCM"
+           rel="nofollow">Github source repository</a>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an issue</a>.
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="source-code-for-the-variational-autoencoder">
+<h1>Source code for the variational autoencoder<a class="headerlink" href="#source-code-for-the-variational-autoencoder" title="Permalink to this headline">¶</a></h1>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># Convolutional autoencoder for 20CRv2c fields.</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">sys</span>
+<span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="c1">#tf.enable_eager_execution()</span>
+<span class="kn">from</span> <span class="nn">tensorflow.data</span> <span class="k">import</span> <span class="n">Dataset</span>
+<span class="kn">import</span> <span class="nn">pickle</span>
+<span class="kn">import</span> <span class="nn">numpy</span>
+<span class="kn">from</span> <span class="nn">glob</span> <span class="k">import</span> <span class="n">glob</span>
+
+<span class="c1"># How many epochs to train for</span>
+<span class="n">n_epochs</span><span class="o">=</span><span class="mi">26</span>
+
+<span class="c1"># How big a latent space</span>
+<span class="n">latent_dim</span><span class="o">=</span><span class="mi">100</span>
+
+<span class="c1"># Target data setup</span>
+<span class="n">buffer_size</span><span class="o">=</span><span class="mi">100</span>
+<span class="n">batch_size</span><span class="o">=</span><span class="mi">1</span>
+
+<span class="c1"># Training datasets with four variables</span>
+<span class="n">input_file_dir</span><span class="o">=</span><span class="p">((</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ML_GCM/datasets/&quot;</span> <span class="o">+</span>
+                <span class="s2">&quot;20CR2c/air.2m/training/&quot;</span><span class="p">)</span> <span class="o">%</span>
+                   <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">))</span>
+<span class="n">t2m_files</span><span class="o">=</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/*.tfd&quot;</span> <span class="o">%</span> <span class="n">input_file_dir</span><span class="p">)</span>
+<span class="n">n_steps</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">t2m_files</span><span class="p">)</span>
+<span class="n">tr_tfd</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">t2m_files</span><span class="p">)</span>
+
+<span class="c1"># Create TensorFlow Dataset object from the file names</span>
+<span class="n">tr_data</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">tr_tfd</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">)</span>
+
+<span class="c1"># Make a 5-variable tensor including the insolation field</span>
+<span class="k">def</span> <span class="nf">load_tensor</span><span class="p">(</span><span class="n">file_name</span><span class="p">):</span>
+    <span class="n">sict</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">t2m</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">sict</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">t2m</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">t2m</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">regex_replace</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span>
+                                      <span class="s1">&#39;air.2m&#39;</span><span class="p">,</span><span class="s1">&#39;prmsl&#39;</span><span class="p">)</span>
+    <span class="n">sict</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">prmsl</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">sict</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">prmsl</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">prmsl</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">regex_replace</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span>
+                                      <span class="s1">&#39;prmsl&#39;</span><span class="p">,</span><span class="s1">&#39;uwnd.10m&#39;</span><span class="p">)</span>
+    <span class="n">sict</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">uwnd</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">sict</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">uwnd</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">uwnd</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">regex_replace</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span>
+                                      <span class="s1">&#39;uwnd.10m&#39;</span><span class="p">,</span><span class="s1">&#39;vwnd.10m&#39;</span><span class="p">)</span>
+    <span class="n">sict</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">vwnd</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">sict</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">vwnd</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">vwnd</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">file_name</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">regex_replace</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span>
+                                      <span class="s1">&#39;vwnd.10m&#39;</span><span class="p">,</span><span class="s1">&#39;insolation&#39;</span><span class="p">)</span>
+    <span class="n">fdte</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span><span class="o">-</span><span class="mi">17</span><span class="p">,</span><span class="mi">17</span><span class="p">)</span>
+    <span class="n">mnth</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="n">fdte</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dy</span>   <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="n">fdte</span><span class="p">,</span><span class="mi">8</span><span class="p">,</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">dy</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">cond</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">math</span><span class="o">.</span><span class="n">equal</span><span class="p">(</span><span class="n">mnth</span><span class="o">+</span><span class="n">dy</span><span class="p">,</span><span class="s1">&#39;0229&#39;</span><span class="p">),</span>
+                               <span class="k">lambda</span><span class="p">:</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="s1">&#39;28&#39;</span><span class="p">),</span><span class="k">lambda</span><span class="p">:</span> <span class="n">dy</span><span class="p">)</span>
+    <span class="n">file_name</span><span class="o">=</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="n">file_name</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span><span class="o">-</span><span class="mi">17</span><span class="p">)</span><span class="o">+</span>
+                <span class="s1">&#39;1969-&#39;</span><span class="o">+</span><span class="n">mnth</span><span class="o">+</span><span class="s1">&#39;-&#39;</span><span class="o">+</span><span class="n">dy</span><span class="o">+</span><span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">substr</span><span class="p">(</span><span class="n">fdte</span><span class="p">,</span><span class="n">tf</span><span class="o">.</span><span class="n">strings</span><span class="o">.</span><span class="n">length</span><span class="p">(</span><span class="n">fdte</span><span class="p">)</span><span class="o">-</span><span class="mi">7</span><span class="p">,</span><span class="mi">7</span><span class="p">))</span>
+    <span class="n">sict</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">read_file</span><span class="p">(</span><span class="n">file_name</span><span class="p">)</span>
+    <span class="n">insol</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">parse_tensor</span><span class="p">(</span><span class="n">sict</span><span class="p">,</span><span class="n">numpy</span><span class="o">.</span><span class="n">float32</span><span class="p">)</span>
+    <span class="n">insol</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">insol</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">ict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">t2m</span><span class="p">,</span><span class="n">prmsl</span><span class="p">,</span><span class="n">uwnd</span><span class="p">,</span><span class="n">vwnd</span><span class="p">,</span><span class="n">insol</span><span class="p">],</span><span class="mi">2</span><span class="p">)</span> <span class="c1"># Now [79,159,5]</span>
+    <span class="n">ict</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">ict</span><span class="p">,[</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">5</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">ict</span>
+
+
+<span class="n">tr_target</span> <span class="o">=</span> <span class="n">tr_data</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">load_tensor</span><span class="p">)</span>
+<span class="n">tr_source</span> <span class="o">=</span> <span class="n">tr_data</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">load_tensor</span><span class="p">)</span>
+
+<span class="n">tr_data</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">zip</span><span class="p">((</span><span class="n">tr_source</span><span class="p">,</span> <span class="n">tr_target</span><span class="p">))</span>
+<span class="n">tr_data</span> <span class="o">=</span> <span class="n">tr_data</span><span class="o">.</span><span class="n">shuffle</span><span class="p">(</span><span class="n">buffer_size</span><span class="p">)</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+
+<span class="c1"># Same for the test dataset</span>
+<span class="n">input_file_dir</span><span class="o">=</span><span class="p">((</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ML_GCM/datasets/&quot;</span> <span class="o">+</span>
+                <span class="s2">&quot;20CR2c/air.2m/test/&quot;</span><span class="p">)</span> <span class="o">%</span>
+                   <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">))</span>
+<span class="n">t2m_files</span><span class="o">=</span><span class="n">glob</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/*.tfd&quot;</span> <span class="o">%</span> <span class="n">input_file_dir</span><span class="p">)</span>
+<span class="n">test_steps</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">t2m_files</span><span class="p">)</span>
+<span class="n">test_tfd</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">constant</span><span class="p">(</span><span class="n">t2m_files</span><span class="p">)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">from_tensor_slices</span><span class="p">(</span><span class="n">test_tfd</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">n_epochs</span><span class="p">)</span>
+<span class="n">test_target</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">load_tensor</span><span class="p">)</span>
+<span class="n">test_source</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">map</span><span class="p">(</span><span class="n">load_tensor</span><span class="p">)</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">Dataset</span><span class="o">.</span><span class="n">zip</span><span class="p">((</span><span class="n">test_source</span><span class="p">,</span> <span class="n">test_target</span><span class="p">))</span>
+<span class="n">test_data</span> <span class="o">=</span> <span class="n">test_data</span><span class="o">.</span><span class="n">batch</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)</span>
+
+<span class="c1"># Add noise to latent vector</span>
+<span class="k">def</span> <span class="nf">noise</span><span class="p">(</span><span class="n">encoded</span><span class="p">):</span>
+    <span class="n">epsilon</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">random_normal</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">encoded</span><span class="p">),</span>
+                                             <span class="n">mean</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span><span class="n">stddev</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">encoded</span><span class="o">+</span><span class="n">epsilon</span>
+<span class="c1"># Normalise the latent vector</span>
+<span class="k">def</span> <span class="nf">stdise</span><span class="p">(</span><span class="n">encoded</span><span class="p">):</span>
+    <span class="n">encoded</span> <span class="o">=</span> <span class="n">encoded</span><span class="o">-</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+    <span class="n">encoded</span> <span class="o">=</span> <span class="n">encoded</span><span class="o">/</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">backend</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">encoded</span>
+
+<span class="c1"># Input placeholder</span>
+<span class="n">original</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="mi">79</span><span class="p">,</span><span class="mi">159</span><span class="p">,</span><span class="mi">5</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;encoder_input&#39;</span><span class="p">)</span>
+<span class="c1"># Encoding layers</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)(</span><span class="n">original</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.3</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="c1"># N-dimensional latent space representation</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="o">*</span><span class="mi">19</span><span class="o">*</span><span class="mi">90</span><span class="p">,))(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">encoded</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">stdise</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,))(</span><span class="n">x</span><span class="p">)</span>
+
+<span class="c1"># Define an encoder model</span>
+<span class="n">encoder</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">original</span><span class="p">,</span> <span class="n">encoded</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;encoder&#39;</span><span class="p">)</span>
+
+<span class="c1"># Add a noise layer to make the encoder variational</span>
+<span class="n">noise_i</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;noise_input&#39;</span><span class="p">)</span>
+<span class="n">noise_o</span>  <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Lambda</span><span class="p">(</span><span class="n">noise</span><span class="p">,</span> <span class="n">output_shape</span><span class="o">=</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,))(</span><span class="n">noise_i</span><span class="p">)</span>
+<span class="n">noise_m</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">noise_i</span><span class="p">,</span> <span class="n">noise_o</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;noise_m&#39;</span><span class="p">)</span>
+
+<span class="c1"># Decoding layers</span>
+<span class="n">encoded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Input</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="n">latent_dim</span><span class="p">,),</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;decoder_input&#39;</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">9</span><span class="o">*</span><span class="mi">19</span><span class="o">*</span><span class="mi">90</span><span class="p">,)(</span><span class="n">encoded</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">9</span><span class="p">,</span><span class="mi">19</span><span class="p">,</span><span class="mi">90</span><span class="p">,))(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2DTranspose</span><span class="p">(</span><span class="mi">90</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>  <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2DTranspose</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>  <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2DTranspose</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span>  <span class="n">strides</span><span class="o">=</span> <span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;valid&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">x</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">ELU</span><span class="p">()(</span><span class="n">x</span><span class="p">)</span>
+<span class="n">decoded</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Conv2D</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">padding</span><span class="o">=</span><span class="s1">&#39;same&#39;</span><span class="p">)(</span><span class="n">x</span><span class="p">)</span> <span class="c1"># Will be 75x159x5 </span>
+
+<span class="c1"># Define a generator (decoder) model</span>
+<span class="n">generator</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">encoded</span><span class="p">,</span> <span class="n">decoded</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;generator&#39;</span><span class="p">)</span>
+
+<span class="c1"># Combine the encoder and the generator into an autoencoder</span>
+<span class="n">output</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="n">encoder</span><span class="p">(</span><span class="n">original</span><span class="p">))</span>
+<span class="n">autoencoder</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">original</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">output</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;autoencoder&#39;</span><span class="p">)</span>
+
+<span class="c1"># Combine the encoder, the noise, and the generator, into a variational autoencoder</span>
+<span class="n">output_v</span> <span class="o">=</span> <span class="n">generator</span><span class="p">(</span><span class="n">noise_m</span><span class="p">(</span><span class="n">encoder</span><span class="p">(</span><span class="n">original</span><span class="p">)))</span>
+<span class="n">var_autoencoder</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">Model</span><span class="p">(</span><span class="n">inputs</span><span class="o">=</span><span class="n">original</span><span class="p">,</span> <span class="n">outputs</span><span class="o">=</span><span class="n">output_v</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;var_autoencoder&#39;</span><span class="p">)</span>
+
+<span class="n">var_autoencoder</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="s1">&#39;adadelta&#39;</span><span class="p">,</span><span class="n">loss</span><span class="o">=</span><span class="s1">&#39;mean_squared_error&#39;</span><span class="p">)</span>
+
+<span class="c1"># Save model and history state after every epoch</span>
+<span class="n">history</span><span class="o">=</span><span class="p">{}</span>
+<span class="n">history</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+<span class="n">history</span><span class="p">[</span><span class="s1">&#39;val_loss&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">[]</span>
+<span class="k">class</span> <span class="nc">CustomSaver</span><span class="p">(</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">callbacks</span><span class="o">.</span><span class="n">Callback</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">on_epoch_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">epoch</span><span class="p">,</span> <span class="n">logs</span><span class="o">=</span><span class="p">{}):</span>
+        <span class="n">save_dir</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ML_GCM/autoencoder/&quot;</span><span class="o">+</span>
+                   <span class="s2">&quot;Epoch_</span><span class="si">%04d</span><span class="s2">&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                         <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">),</span><span class="n">epoch</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">save_dir</span><span class="p">)):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">save_dir</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">model</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;var_autoencoder&#39;</span><span class="p">,</span><span class="s1">&#39;autoencoder&#39;</span><span class="p">,</span><span class="s1">&#39;encoder&#39;</span><span class="p">,</span><span class="s1">&#39;generator&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">save_dir</span><span class="p">,</span><span class="n">model</span><span class="p">))):</span>
+                <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/</span><span class="si">%s</span><span class="s2">&quot;</span> <span class="o">%</span> <span class="p">(</span><span class="n">save_dir</span><span class="p">,</span><span class="n">model</span><span class="p">)))</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">var_autoencoder</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/var_autoencoder&quot;</span> <span class="o">%</span> <span class="n">save_dir</span><span class="p">)</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">autoencoder</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/autoencoder&quot;</span> <span class="o">%</span> <span class="n">save_dir</span><span class="p">)</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/encoder&quot;</span> <span class="o">%</span> <span class="n">save_dir</span><span class="p">)</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">models</span><span class="o">.</span><span class="n">save_model</span><span class="p">(</span><span class="n">generator</span><span class="p">,</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/generator&quot;</span> <span class="o">%</span> <span class="n">save_dir</span><span class="p">)</span>
+        <span class="n">history</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logs</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">])</span>
+        <span class="n">history</span><span class="p">[</span><span class="s1">&#39;val_loss&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">logs</span><span class="p">[</span><span class="s1">&#39;val_loss&#39;</span><span class="p">])</span>
+        <span class="n">history_file</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/ML_GCM/autoencoder/&quot;</span><span class="o">+</span>
+                      <span class="s2">&quot;history_to_</span><span class="si">%04d</span><span class="s2">.pkl&quot;</span><span class="p">)</span> <span class="o">%</span> <span class="p">(</span>
+                         <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">),</span><span class="n">epoch</span><span class="p">)</span>
+        <span class="n">pickle</span><span class="o">.</span><span class="n">dump</span><span class="p">(</span><span class="n">history</span><span class="p">,</span> <span class="nb">open</span><span class="p">(</span><span class="n">history_file</span><span class="p">,</span> <span class="s2">&quot;wb&quot;</span><span class="p">))</span>
+        
+<span class="n">saver</span> <span class="o">=</span> <span class="n">CustomSaver</span><span class="p">()</span>
+
+<span class="c1"># Train the autoencoder</span>
+<span class="n">history</span><span class="o">=</span><span class="n">var_autoencoder</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="n">tr_data</span><span class="p">,</span>
+                            <span class="n">epochs</span><span class="o">=</span><span class="n">n_epochs</span><span class="p">,</span>
+                            <span class="n">steps_per_epoch</span><span class="o">=</span><span class="n">n_steps</span><span class="p">,</span>
+                            <span class="n">validation_data</span><span class="o">=</span><span class="n">test_data</span><span class="p">,</span>
+                            <span class="n">validation_steps</span><span class="o">=</span><span class="n">test_steps</span><span class="p">,</span>
+                            <span class="n">verbose</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+                            <span class="n">callbacks</span><span class="o">=</span><span class="p">[</span><span class="n">saver</span><span class="p">])</span>
+
+</pre></div>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="validation_source.html" title="Source code for the autoencoder validation"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="index.html" title="A variational autoencoder for 20CR"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
+          <li class="nav-item nav-item-1"><a href="../../visualisation/20CRv2c_latent_space/index.html" >Small data: 20CRv2c after compression into a 100-dimensional latent space</a> &#187;</li>
+          <li class="nav-item nav-item-2"><a href="index.html" >A variational autoencoder for 20CR</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

@@ -17,6 +17,5 @@ Library and utility functions used:
    :titlesonly:
    :maxdepth: 1
 
-   Make the speckles field <make_z>
    Load the weather data <load_step>
    Plotting utilities <../../lib/plots>

@@ -1,0 +1,124 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=Edge" />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <title>Small data: 20CRv2c after compression into a 100-dimensional latent space &#8212; Machine Learning GCM</title>
+    <link rel="stylesheet" href="../../_static/sphinxdoc.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../../" src="../../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <script type="text/javascript" src="../../_static/language_data.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="A variational autoencoder for 20CR" href="../../models/autoencoder/index.html" />
+    <link rel="prev" title="Make the 20CRv2c video" href="../20CRv2c_global_analysis/video.html" /> 
+  </head><body>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../models/autoencoder/index.html" title="A variational autoencoder for 20CR"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../20CRv2c_global_analysis/video.html" title="Make the 20CRv2c video"
+             accesskey="P">previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
+      </ul>
+    </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="../../index.html">
+              <img class="logo" src="../../_static/Weather-Network.png" alt="Logo"/>
+            </a></p>
+<h3><a href="../../index.html">Table of Contents</a></h3>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../MO_global_analysis/index.html"> Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../models/autoencoder/index.html">A variational autoencoder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../models/generator/generator.html">A generative model</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../models/predictor/index.html">A +6hr predictor</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../models/GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
+</ul>
+<h3><a href="https://github.com/philip-brohan/ML_GCM">Get the source code</a></h3>
+
+<a href="https://github.com/philip-brohan/ML_GCM"
+           rel="nofollow">Github source repository</a>
+
+<h3>Found a bug, or have a suggestion?</h3>
+
+Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an issue</a>.
+        </div>
+      </div>
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="small-data-20crv2c-after-compression-into-a-100-dimensional-latent-space">
+<h1>Small data: 20CRv2c after compression into a 100-dimensional latent space<a class="headerlink" href="#small-data-20crv2c-after-compression-into-a-100-dimensional-latent-space" title="Permalink to this headline">¶</a></h1>
+<center>
+<table><tr><td><center>
+<iframe src="https://player.vimeo.com/video/369615958?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
+<tr><td><center>Small data: Near-surface temperature, wind, and MSLP, from the Twentieth Century Reanalyis, after compression into a 100-dimensional latent space</center></td></tr>
+</table>
+</center><p>20CRv2c is on a 2 degree grid, so this set of four surface variables has a state vector of size 180*90*4=64,800: we need that many data points, every 6-hours to make the <a class="reference internal" href="../20CRv2c_global_analysis/index.html"><span class="doc">analysis video</span></a>. The <a class="reference internal" href="../../models/autoencoder/index.html"><span class="doc">autoencoder</span></a> compresses that 64,800-dimensional state vector into a 100-dimensional latent space, and then expands it out again. This video shows the reanalysis after this compression. So it’s the same as the <a class="reference internal" href="../20CRv2c_global_analysis/index.html"><span class="doc">original 20CRv2c video</span></a>, except that it uses only 0.15% as much data to represent the weather state.
+As well as the weather state, the video shows the associated latent-space vector (the compressed data form) as the grid of 100 numbers at the bottom left.</p>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../20CRv2c_global_analysis/data.html">Get the data</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../models/autoencoder/index.html">Train the autoencoder</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plot.html">Plot a single frame</a></li>
+<li class="toctree-l1"><a class="reference internal" href="video.html">Plot all the frames and make a video</a></li>
+</ul>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="../../models/autoencoder/index.html" title="A variational autoencoder for 20CR"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../20CRv2c_global_analysis/video.html" title="Make the 20CRv2c video"
+             >previous</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
+      </ul>
+    </div>
+    <div class="footer" role="contentinfo">
+    </div>
+  </body>
+</html>

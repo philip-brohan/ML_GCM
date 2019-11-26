@@ -15,7 +15,9 @@
     <script type="text/javascript" src="../_static/doctools.js"></script>
     <script type="text/javascript" src="../_static/language_data.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" /> 
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Small print" href="../credits.html" />
+    <link rel="prev" title="Make the 20CRv2c video" href="../visualisation/20CRv2c_global_analysis/video.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -23,6 +25,12 @@
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../credits.html" title="Small print"
+             accesskey="N">next</a> |</li>
+        <li class="right" >
+          <a href="../visualisation/20CRv2c_global_analysis/video.html" title="Make the 20CRv2c video"
+             accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">ML GCM</a> &#187;</li> 
       </ul>
     </div>
@@ -37,6 +45,9 @@
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Get training data</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../credits.html">Small Print</a></li>
@@ -59,6 +70,41 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
             
   <div class="section" id="data-for-the-machine-learning-gcm">
 <h1>Data for the Machine Learning GCM<a class="headerlink" href="#data-for-the-machine-learning-gcm" title="Permalink to this headline">¶</a></h1>
+<p>Training data is taken from <a class="reference external" href="https://www.esrl.noaa.gov/psd/data/gridded/data.20thC_ReanV2c.html">20CRv2c</a>, which provides full atmospheric states, every 6 hours, between 1851 and 2012. 20CR is an ensemble system, and v2c has 56 ensemble members; we can’t use the ensemble mean, as it does not have consistent properties - the amplitude of the weather variability depends on how many observations are abvailable. But 20CRv2c provides <a class="reference external" href="https://portal.nersc.gov/project/20C_Reanalysis/">individual ensemble members</a> for some variables, and we can use those.</p>
+<p>The data we are using comprises the 2m temperatures, 10m winds (u and v), and mean-sea-level pressure (MSLP). The period used is 1969 to 2005 for training, and 2006 to 2010 for validation. The period choice is arbitrary, 40 years of data is enough to demonstrate a lot of weather variability, but only runs to about 700Gb on disc, so we can experiment with it using minimal computing resources.</p>
+<p>As well as the weather data, we want some forcing data (training data for modeling annual and diurnal cycles). I’d like the top-of-atmosphere downwelling shortwave - 20CRv2c does not have this, but it does have the surface <a class="reference external" href="https://www.esrl.noaa.gov/psd/cgi-bin/db_search/DBSearch.pl?Dataset=NOAA-CIRES+20th+Century+Reanalysis+Version+2c&amp;Variable=Clear+Sky+UV-B+Downward+Solar+Flux">Clear Sky UV-B Downward Solar Flux</a> - only the ensemble means are readily available, but for this variable it doesn’t matter (it’s not very weather dependent), and for the same reason we only need one year of data.</p>
+<p>We access the data using the <a class="reference external" href="http://brohan.org/IRData/">IRData package</a>:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/env python</span>
+
+<span class="c1"># We&#39;re going to work with 20CR2c fields.</span>
+<span class="c1"># Retrieve the netCDF files from NERSC and store on $SCRATCH</span>
+
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="kn">import</span> <span class="nn">IRData.twcr</span> <span class="k">as</span> <span class="nn">twcr</span>
+<span class="kn">import</span> <span class="nn">urllib.request</span>
+
+<span class="k">for</span> <span class="n">year</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1969</span><span class="p">,</span><span class="mi">2011</span><span class="p">):</span>
+    <span class="c1"># 2c is in 1 year batches so month and day don&#39;t matter</span>
+    <span class="n">dte</span><span class="o">=</span><span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="n">year</span><span class="p">,</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;prmsl&#39;</span><span class="p">,</span><span class="n">dte</span><span class="p">,</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2c&#39;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;air.2m&#39;</span><span class="p">,</span><span class="n">dte</span><span class="p">,</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2c&#39;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;uwnd.10m&#39;</span><span class="p">,</span><span class="n">dte</span><span class="p">,</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2c&#39;</span><span class="p">)</span>
+    <span class="n">twcr</span><span class="o">.</span><span class="n">fetch</span><span class="p">(</span><span class="s1">&#39;vwnd.10m&#39;</span><span class="p">,</span><span class="n">dte</span><span class="p">,</span><span class="n">version</span><span class="o">=</span><span class="s1">&#39;2c&#39;</span><span class="p">)</span>
+
+<span class="c1"># Also need one year of insolation data</span>
+<span class="c1"># I&#39;d like TOA incoming shortwave, but clear sky at surface</span>
+<span class="c1">#  is close enough.</span>
+<span class="c1"># This is only available as ensemble means</span>
+<span class="n">srce</span><span class="o">=</span><span class="p">(</span><span class="s2">&quot;ftp://ftp.cdc.noaa.gov/Datasets/20thC_ReanV2c/&quot;</span><span class="o">+</span>
+      <span class="s2">&quot;gaussian/monolevel/cduvb.1969.nc&quot;</span><span class="p">)</span>
+<span class="n">dst</span><span class="o">=</span><span class="s2">&quot;</span><span class="si">%s</span><span class="s2">/20CR/version_2c/ensmean/cduvb.1969.nc&quot;</span> <span class="o">%</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;SCRATCH&#39;</span><span class="p">)</span>
+<span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">dst</span><span class="p">):</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">)):</span>
+        <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">dst</span><span class="p">))</span>
+    <span class="n">urllib</span><span class="o">.</span><span class="n">request</span><span class="o">.</span><span class="n">urlretrieve</span><span class="p">(</span><span class="n">srce</span><span class="p">,</span> <span class="n">dst</span><span class="p">)</span>
+</pre></div>
+</div>
 </div>
 
 
@@ -73,6 +119,12 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
         <li class="right" style="margin-right: 10px">
           <a href="../genindex.html" title="General Index"
              >index</a></li>
+        <li class="right" >
+          <a href="../credits.html" title="Small print"
+             >next</a> |</li>
+        <li class="right" >
+          <a href="../visualisation/20CRv2c_global_analysis/video.html" title="Make the 20CRv2c video"
+             >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../index.html">ML GCM</a> &#187;</li> 
       </ul>
     </div>

@@ -1,7 +1,7 @@
 Plotting utilities library
 ==========================
 
-This library file contains five functions:
+This library file contains six functions:
 
 quantile_normalise_t2m:
    Converts a cube of T2m in kelvin to a cube of approximately on the range 0-1. If the cube is on the conventional equiangular projectionj (pole at 90N), then the cube will have an approximately flat distribution (each value occurs the same number of times. This is convenient for colourmap plotting.
@@ -11,6 +11,9 @@ plot_cube:
 
 wind_field:
    Take a field of white noise, and advect it along with a wind field. This turns the speckles into stripes in the direction of the wind. They can be made to move from frame to frame by advecting most them a little more each timestep (and resetting a few of them to zero advection)
+
+make_wind_seed:
+   Make the field of white noise needed by the 'wind_field' function.
 
 draw_lat_lon:
    Draw lines of latitude and longitude (copes with rotated poles).
