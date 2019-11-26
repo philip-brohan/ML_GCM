@@ -36,8 +36,22 @@ It would be nice to use the `Met Office UM <https://en.wikipedia.org/wiki/Unifie
 
     Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c <visualisation/20CRv2c_global_analysis/index>
 
-The `Twentieth Century Reanalysis
+The `Twentieth Century Reanalysis <https://www.esrl.noaa.gov/psd/data/20thC_Rean/>`_ `version 2c (20CRv2c) <https://www.esrl.noaa.gov/psd/data/gridded/data.20thC_ReanV2c.html>`_ provides data every 6-hours on a 2-degree grid, for the past 150+ years. So this is consistent data, at a manageable volume, for a long period. (I have used 20CRv2c ensemble member 1 data from 1969-2005 as training data, and 2006-on as validation).
 
+I chose to look at 4 near-surface variables: 2-meter air temperature, mean-sea-level-presure, meridional wind and zonal wind. (Precipitation presents too many complications for a first attempt, so not used here).
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   Download training data <data/download>
+   Process training data for TensorFlow<data/conversion>
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
+   A variational autoencoder <models/autoencoder/index>
 
 .. raw:: html
 
@@ -58,18 +72,23 @@ The `Twentieth Century Reanalysis
    :titlesonly:
    :maxdepth: 1
 
-   Download training data <data/download>
-   Process training data for TensorFlow<data/conversion>
+   A generative model <models/generator/generator>
+   A +6hr predictor <models/predictor/index>
+   A Machine-Learning GCM using the +6hr predictor <models/GCM/index>
+   
+.. raw:: html
+
+    <center>
+    <table><tr><td><center>
+    <iframe src="https://player.vimeo.com/video/371672143?title=0&byline=0&portrait=0" width="795" height="448" frameborder="0" webkitallowfullscreen mozallowfullscreen allowfullscreen></iframe></center></td></tr>
+    </table>
+    </center>
 
 .. toctree::
    :titlesonly:
    :maxdepth: 1
 
-   A variational autoencoder <models/autoencoder/index>
-   A generative model <models/generator/generator>
-   A +6hr predictor <models/predictor/index>
-   A Machine-Learning GCM using the +6hr predictor <models/GCM/index>
-   
+    Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM. <visualisation/GCM_video/index>
 
 .. toctree::
    :titlesonly:
