@@ -26,6 +26,7 @@ from load_step import load_di_icec
 sys.path.append('%s/../../lib/' % os.path.dirname(__file__))
 from plots import quantile_normalise_t2m
 from plots import plot_cube
+from plots import make_wind_seed
 from plots import wind_field
 from plots import get_precip_colours
 from plots import draw_lat_lon
@@ -54,10 +55,6 @@ parser.add_argument("--zoom", help="Scale factor for viewport (1=global)",
                     default=1,type=float,required=False)
 parser.add_argument("--opdir", help="Directory for output files",
                     default="%s/images/opfc_global_3var_meanp" % \
-                                           os.getenv('SCRATCH'),
-                    type=str,required=False)
-parser.add_argument("--zfile", help="Noise pickle file name",
-                    default="%s/images/opfc_global_3var/z.pkl" % \
                                            os.getenv('SCRATCH'),
                     type=str,required=False)
 
@@ -118,7 +115,7 @@ rw=iris.analysis.cartography.rotate_winds(u10m,v10m,cs)
 u10m = rw[0].regrid(wind_pc,iris.analysis.Linear())
 v10m = rw[1].regrid(wind_pc,iris.analysis.Linear())
 seq=(dte-datetime.datetime(2000,1,1)).total_seconds()/3600
-z=pickle.load(open( args.zfile, "rb" ) )
+z=make_wind_seed(0.4,seed=1)
 wind_noise_field=wind_field(u10m,v10m,z,sequence=int(seq*5),epsilon=0.01)
 
 # Define an axes to contain the plot. In this case our axes covers

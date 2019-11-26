@@ -1,15 +1,9 @@
-Plot one frame from the 20CRv2c video
-=====================================
+Plot one frame from the 20CRv2c autoencoded video
+=================================================
 
-The video shows temperature, wind, and mean-sea-level pressure. 
+The video shows temperature, wind, and mean-sea-level pressure, it's the same as the :doc:`original 20CRv2c video <../20CRv2c_global_analysis/plot>` except that the fields are passed through :doc:`the autoencoder <../../models/autoencoder/index>` before plotting, and the 100-dimensional latent space encoded reprsentation is shown as an overlay in the bottom left. 
 
-* The temperature is a colour map. It is quantile normalised - that is, the temperature field is scaled so that it's distribution is flat - this means that the image shows the same amount of each colour. 
-* Mean-sea-level-pressure is shown as a contour plot.
-* Wind is shown as advected speckles - a random field advected along with the wind vectors - this turns the speckles into stripes in the direction of the wind. They can be made to move from frame to frame by advecting most them a little more each timestep (and resetting a few of them to zero advection). This is plotted by adding the wind field to the temperature and precipitation fields before plotting them. The field has mean zero so it has no average effect, but it perturbs the other fields in a way which shows the wind structure.
-
-Script to make a single frame:
-
-.. literalinclude:: ../../../visualisation/20CRv2c_global_analysis/20CRv2c_4var.py
+.. literalinclude:: ../../../visualisation/20CRv2c_compressed/plot_latent_space.py
 
 Library and utility functions used:
 
@@ -17,5 +11,7 @@ Library and utility functions used:
    :titlesonly:
    :maxdepth: 1
 
-   Make the speckles field <make_z>
+   Function to load insolation <../../lib/insolation>
+   Specification for the data analysis grid <../../lib/geometry>
+   Weather data normalisation <../../lib/normalise>
    Plotting utilities <../../lib/plots>

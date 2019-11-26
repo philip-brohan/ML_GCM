@@ -1,5 +1,5 @@
-Visualising the Met Office Global Analysis
-==========================================
+Big data: Near-surface temperature, wind, and precipitation, from the Met Office global analysis
+================================================================================================
 
 .. raw:: html
 
