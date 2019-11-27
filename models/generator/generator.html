@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Source code for using the generative model" href="source.html" />
-    <link rel="prev" title="Converting training data for use in TensorFlow" href="../../data/conversion.html" /> 
+    <link rel="prev" title="Make the compressed 20CRv2c video" href="../../visualisation/20CRv2c_latent_space/video.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,7 +29,7 @@
           <a href="source.html" title="Source code for using the generative model"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../../data/conversion.html" title="Converting training data for use in TensorFlow"
+          <a href="../../visualisation/20CRv2c_latent_space/video.html" title="Make the compressed 20CRv2c video"
              accesskey="P">previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
       </ul>
@@ -47,17 +47,26 @@
 <li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
 </ul>
-<ul class="current">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../autoencoder/index.html">A variational autoencoder</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">A generative model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../predictor/index.html">A +6hr predictor</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
@@ -80,6 +89,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
             
   <div class="section" id="generating-new-weather-states">
 <h1>Generating new weather states<a class="headerlink" href="#generating-new-weather-states" title="Permalink to this headline">¶</a></h1>
+<p>A conventional, physics-based, GCM can make new weather states, and these new states are constrained to be plausible representations of real weather by forcing them to comply with a set of physical (and empirical) rules. The <a class="reference internal" href="../autoencoder/index.html"><span class="doc">autoencoder generator model</span></a> can also make new weather states, and these are also constrained to be plausible representations of real weather, by constraining the latent space, during training, to contain only states which decode to plausible weather states.</p>
 <div class="figure align-center" id="id1" style="width: 95%">
 <a class="reference internal image-reference" href="../../_images/generator.png"><img alt="../../_images/generator.png" src="../../_images/generator.png" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Using half the autoencoder as a generative model. (<a class="reference internal" href="../autoencoder/source.html"><span class="doc">Source code</span></a> - same as <a class="reference internal" href="../autoencoder/index.html"><span class="doc">the autoencoder</span></a>).</span></p>
@@ -89,6 +99,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
 <li class="toctree-l1"><a class="reference internal" href="../autoencoder/source.html">Source code for the generative model (part of the autoencoder)</a></li>
 </ul>
 </div>
+<p>To test the generative model, construct a latent-space state from random numbers (100 independent draws from a normal distribution, mean=0, sd=1).</p>
 <div class="figure align-center" id="id2" style="width: 95%">
 <a class="reference internal image-reference" href="../../_images/random_ls.png"><img alt="../../_images/random_ls.png" src="../../_images/random_ls.png" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Inset: the 100 random values in the latent space. Main figure: T2m, mslp, u and v winds generated from this latent space vector (<a class="reference internal" href="source.html"><span class="doc">Source code</span></a>).</span></p>
@@ -116,7 +127,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
           <a href="source.html" title="Source code for using the generative model"
              >next</a> |</li>
         <li class="right" >
-          <a href="../../data/conversion.html" title="Converting training data for use in TensorFlow"
+          <a href="../../visualisation/20CRv2c_latent_space/video.html" title="Make the compressed 20CRv2c video"
              >previous</a> |</li>
         <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
       </ul>

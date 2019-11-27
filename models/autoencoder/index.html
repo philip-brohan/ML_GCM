@@ -17,7 +17,7 @@
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
     <link rel="next" title="Source code for the variational autoencoder" href="source.html" />
-    <link rel="prev" title="Small data: 20CRv2c after compression into a 100-dimensional latent space" href="../../visualisation/20CRv2c_latent_space/index.html" /> 
+    <link rel="prev" title="Normalisation library" href="../../lib/normalise.html" /> 
   </head><body>
     <div class="related" role="navigation" aria-label="related navigation">
       <h3>Navigation</h3>
@@ -29,10 +29,9 @@
           <a href="source.html" title="Source code for the variational autoencoder"
              accesskey="N">next</a> |</li>
         <li class="right" >
-          <a href="../../visualisation/20CRv2c_latent_space/index.html" title="Small data: 20CRv2c after compression into a 100-dimensional latent space"
+          <a href="../../lib/normalise.html" title="Normalisation library"
              accesskey="P">previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../visualisation/20CRv2c_latent_space/index.html" accesskey="U">Small data: 20CRv2c after compression into a 100-dimensional latent space</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
       </ul>
     </div>
       <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
@@ -47,18 +46,27 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
 </ul>
-<ul class="current">
-<li class="toctree-l1 current"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
-</ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
 </ul>
 <ul class="current">
 <li class="toctree-l1 current"><a class="current reference internal" href="#">A variational autoencoder</a></li>
+</ul>
+<ul class="current">
+<li class="toctree-l1 current"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../generator/generator.html">A generative model</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../predictor/index.html">A +6hr predictor</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
@@ -81,15 +89,28 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
             
   <div class="section" id="a-variational-autoencoder-for-20cr">
 <h1>A variational autoencoder for 20CR<a class="headerlink" href="#a-variational-autoencoder-for-20cr" title="Permalink to this headline">¶</a></h1>
+<p>An <a class="reference external" href="https://en.wikipedia.org/wiki/Autoencoder">autoencoder</a> is a pair of <a class="reference external" href="https://en.wikipedia.org/wiki/Artificial_neural_network">neural nets</a>: one of them (the <cite>encoder</cite>) compresses an input field into a low-dimensional ‘latent space’, and the other (the <cite>generator</cite> or <cite>decoder</cite>) expands the small latent space representation back into the input field. They are trained as a pair - optimising to make <code class="docutils literal notranslate"><span class="pre">generator(encoder(input))</span></code> as close to the original <code class="docutils literal notranslate"><span class="pre">input</span></code> as possible. Effectively an autoencoder learns an effective compressed representation of the original data.</p>
+<p>A <a class="reference external" href="https://en.wikipedia.org/wiki/Autoencoder#Variational_autoencoder_(VAE)">variational autoencoder</a> is an autoencoder where the generator network can be used independently of the encoder to generate new states similar to the original inputs. This means constraining the latent space to be continuous (two close points in the latent space should produce two similar states when decoded), and complete (any point sampled from the latent space should give ‘meaningful’ content once decoded).</p>
+<p>After <a class="reference external" href="http://brohan.org/Machine-Learning/">some experimentation</a> I chose an autoencoder with eight convolutional layers, encoding the features as a 100-dimensional latent space. I failed to get the <a class="reference external" href="https://www.kaggle.com/vikramtiwari/autoencoders-using-tf-keras-mnist">traditional variational autoencoder design</a> to work, so I adopted a simpler approach: regularising the latent space by explicitly forcing it to have zero mean and unit standard deviation, and perturbing it with gaussian noise.</p>
 <div class="figure align-center" id="id1" style="width: 95%">
 <a class="reference internal image-reference" href="../../_images/autoencoder.png"><img alt="../../_images/autoencoder.png" src="../../_images/autoencoder.png" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Model structure for the variational autoencoder (<a class="reference internal" href="source.html"><span class="doc">Source code</span></a>).</span></p>
 </div>
+<p>The autoencoder is specified as five models:</p>
+<ul class="simple">
+<li>An encoder</li>
+<li>A generator</li>
+<li>A noise model</li>
+<li>An autoencoder = generator(encoder())</li>
+<li>A variational autoencoder = generator(noise(encoder()))</li>
+</ul>
+<p>Then training the variational autoencoder model sets the weights in the encoder and the generator, while maintaining a regularised latent space, and we can deploy the <a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"><span class="doc">autoencoder (without noise)</span></a> and <a class="reference internal" href="../generator/generator.html"><span class="doc">generator</span></a> models using those weights.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="source.html">Source code for the variational autoencoder</a></li>
 </ul>
 </div>
+<p>To test the model, run the autoencoder on 20CRv2c fields not used in the training process:</p>
 <div class="figure align-center" id="id2" style="width: 95%">
 <a class="reference internal image-reference" href="../../_images/compare_tpuv.png"><img alt="../../_images/compare_tpuv.png" src="../../_images/compare_tpuv.png" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Validation of the autoencoder. Top panel: T2m, mslp, u and v winds in the original 20CRv3 (at one point in time). Botom panel: same, but after autoencoding. The four scatter-plots compare orignal and encoded values for the four variables. (<a class="reference internal" href="validation_source.html"><span class="doc">Validation source code</span></a>).</span></p>
@@ -117,10 +138,9 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
           <a href="source.html" title="Source code for the variational autoencoder"
              >next</a> |</li>
         <li class="right" >
-          <a href="../../visualisation/20CRv2c_latent_space/index.html" title="Small data: 20CRv2c after compression into a 100-dimensional latent space"
+          <a href="../../lib/normalise.html" title="Normalisation library"
              >previous</a> |</li>
-        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li>
-          <li class="nav-item nav-item-1"><a href="../../visualisation/20CRv2c_latent_space/index.html" >Small data: 20CRv2c after compression into a 100-dimensional latent space</a> &#187;</li> 
+        <li class="nav-item nav-item-0"><a href="../../index.html">ML GCM</a> &#187;</li> 
       </ul>
     </div>
     <div class="footer" role="contentinfo">

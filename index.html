@@ -56,6 +56,8 @@
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="models/generator/generator.html">A generative model</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="models/predictor/index.html">A +6hr predictor</a></li>
 </ul>
 <ul>
@@ -136,14 +138,19 @@ had <a class="reference external" href="https://vimeo.com/275778137">limited suc
 <li class="toctree-l1"><a class="reference internal" href="visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
 </ul>
 </div>
-<p>But the real virtue of the 100-dimensional latent space encoding is that it allows me to use the ‘generator’ half of the autoencoder as a generative model: it provides a method for making new, internally consistent weather states. So we can convert the autoencoder into a predictor:</p>
+<p>But the real virtue of the 100-dimensional latent space encoding is that it allows me to use the ‘generator’ half of the autoencoder as a generative model: it provides a method for making new, internally consistent, weather states.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="models/generator/generator.html">A generative model</a></li>
+</ul>
+</div>
+<p>The key virtue of a GCM is that it can produce new, hypothetical, atmospheric states which are plausible representations of reality. The autoencoder generator has the same property. So I can convert the autoencoder into a predictor:</p>
+<div class="toctree-wrapper compound">
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="models/predictor/index.html">A +6hr predictor</a></li>
 </ul>
 </div>
-<p>And we can then use the predictor as a GCM, by repeatedly re-using its output as its input:</p>
+<p>And I can then use the predictor as a GCM, by repeatedly re-using its output as its input:</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="models/GCM/index.html">A Machine-Learning GCM using the +6hr predictor</a></li>
@@ -158,8 +165,8 @@ had <a class="reference external" href="https://vimeo.com/275778137">limited suc
 <li class="toctree-l1"><a class="reference internal" href="visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 </div>
-<p>This system produces credible temperature, pressure, and wind, using only machine learning - no physics, no dynamics, no chemistry. It’s not quite at the state of the art, but the model was very quick and easy to produce: the model specification is only a few dozen lines of Python, trained in 20 minutes on my laptop, and it runs at more than 100,000 times the speed of the conventional GCM it was trained on.</p>
-<p>As a proof-of-concept this is a success: It is possible to build reasonable General Circulation Models using just conventional machine learning tools. Such models are <em>enormously</em> faster (to build and to run) than conventional physics-based GCMs; it is likely they will go on to become very widely used.</p>
+<p>This system produces reasonable temperature, pressure, and wind, using <em>only</em> machine learning - no physics, no dynamics, no chemistry. It’s well short of the state of the art for conventional GCMs, but the model was very quick and easy to produce: the model specification is only a few dozen lines of Python, trained in 20 minutes on my laptop, and it runs at more than 100,000 times the speed of the conventional GCM it was trained on.</p>
+<p>As a proof-of-concept this is a success: It is possible to build useful General Circulation Models using just conventional machine learning tools. Such models are <em>enormously</em> faster (to build and to run) than conventional physics-based GCMs; it is likely they will go on to become very widely used.</p>
 <div class="toctree-wrapper compound">
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="credits.html">Small Print</a></li>

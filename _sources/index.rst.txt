@@ -78,17 +78,23 @@ This autoencoder was very successful in building a low-dimensional representatio
 
     Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space. <visualisation/20CRv2c_latent_space/index>
 
-But the real virtue of the 100-dimensional latent space encoding is that it allows me to use the 'generator' half of the autoencoder as a generative model: it provides a method for making new, internally consistent weather states. So we can convert the autoencoder into a predictor:
-
+But the real virtue of the 100-dimensional latent space encoding is that it allows me to use the 'generator' half of the autoencoder as a generative model: it provides a method for making new, internally consistent, weather states. 
 
 .. toctree::
    :titlesonly:
    :maxdepth: 1
 
    A generative model <models/generator/generator>
+
+The key virtue of a GCM is that it can produce new, hypothetical, atmospheric states which are plausible representations of reality. The autoencoder generator has the same property. So I can convert the autoencoder into a predictor:
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
    A +6hr predictor <models/predictor/index>
 
-And we can then use the predictor as a GCM, by repeatedly re-using its output as its input:
+And I can then use the predictor as a GCM, by repeatedly re-using its output as its input:
 
 .. toctree::
    :titlesonly:
@@ -110,9 +116,9 @@ And we can then use the predictor as a GCM, by repeatedly re-using its output as
 
     Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM. <visualisation/GCM_video/index>
 
-This system produces credible temperature, pressure, and wind, using only machine learning - no physics, no dynamics, no chemistry. It's not quite at the state of the art, but the model was very quick and easy to produce: the model specification is only a few dozen lines of Python, trained in 20 minutes on my laptop, and it runs at more than 100,000 times the speed of the conventional GCM it was trained on.
+This system produces reasonable temperature, pressure, and wind, using *only* machine learning - no physics, no dynamics, no chemistry. It's well short of the state of the art for conventional GCMs, but the model was very quick and easy to produce: the model specification is only a few dozen lines of Python, trained in 20 minutes on my laptop, and it runs at more than 100,000 times the speed of the conventional GCM it was trained on.
 
-As a proof-of-concept this is a success: It is possible to build reasonable General Circulation Models using just conventional machine learning tools. Such models are *enormously* faster (to build and to run) than conventional physics-based GCMs; it is likely they will go on to become very widely used.
+As a proof-of-concept this is a success: It is possible to build useful General Circulation Models using just conventional machine learning tools. Such models are *enormously* faster (to build and to run) than conventional physics-based GCMs; it is likely they will go on to become very widely used.
 
 .. toctree::
    :titlesonly:

@@ -47,17 +47,28 @@
 <li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_global_analysis/index.html"> Medium-sized data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c</a></li>
 </ul>
 <ul>
+<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../autoencoder/index.html">A variational autoencoder</a></li>
+</ul>
+<ul>
 <li class="toctree-l1"><a class="reference internal" href="../../visualisation/20CRv2c_latent_space/index.html"> Small data: Near-surface temperature, wind, and mean-sea-level pressure, from the Twentieth Century Reanalysis version 2c, after compression into a 100-dimensional latent space.</a></li>
 </ul>
 <ul>
-<li class="toctree-l1"><a class="reference internal" href="../../data/download.html">Download training data</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../data/conversion.html">Process training data for TensorFlow</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../generator/generator.html">A generative model</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../predictor/index.html">A +6hr predictor</a></li>
 </ul>
 <ul class="current">
-<li class="toctree-l1"><a class="reference internal" href="../autoencoder/index.html">A variational autoencoder</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../generator/generator.html">A generative model</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../predictor/index.html">A +6hr predictor</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">A Machine-Learning GCM using the +6hr predictor</a></li>
+</ul>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../visualisation/GCM_video/index.html"> Simulated data: Near-surface temperature, wind, and mean-sea-level pressure, from the Machine-Learning GCM.</a></li>
 </ul>
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../../credits.html">Small Print</a></li>
@@ -80,6 +91,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
             
   <div class="section" id="a-gcm-using-the-6-hour-forecast-model">
 <h1>A GCM using the 6-hour forecast model<a class="headerlink" href="#a-gcm-using-the-6-hour-forecast-model" title="Permalink to this headline">¶</a></h1>
+<p>The final step to make a GCM is to run the <a class="reference internal" href="../predictor/index.html"><span class="doc">predictor</span></a> repeatedly, using the output from the previous run as the input to the next run. This works, but if the model is left completely free to run it does not have reliable diurnal and annual cycles. I got better results by editing the top-of-atmosphere insolation field in each state (which depends only on time and date) to make sure it was always correct - effectively forcing the model with the TOA radiation pattern.</p>
 <div class="figure align-center" id="id1" style="width: 95%">
 <a class="reference internal image-reference" href="../../_images/GCM.png"><img alt="../../_images/GCM.png" src="../../_images/GCM.png" style="width: 95%;" /></a>
 <p class="caption"><span class="caption-text">Model structure for the ML GCM (<a class="reference internal" href="source.html"><span class="doc">Source code</span></a>).</span></p>
@@ -89,6 +101,7 @@ Please <a href="https://github.com/philip-brohan/ML_GCM/issues/new">raise an iss
 <li class="toctree-l1"><a class="reference internal" href="source.html">Source code for the ML GCM</a></li>
 </ul>
 </div>
+<p>To test the Machine Learning GCM, I ran it for a year and made <a class="reference internal" href="../../visualisation/GCM_video/index.html"><span class="doc">a video of the output sequence of atmospheric states.</span></a></p>
 </div>
 
 
