@@ -172,7 +172,7 @@ def load_state(dt):
 
 # Plot 4 fields of each, original and generated
 fig=Figure(figsize=(10.8,10.8),
-           dpi=100,
+           dpi=300,
            facecolor=(0.88,0.88,0.88,1),
            edgecolor=None,
            linewidth=0.0,
@@ -182,10 +182,16 @@ fig=Figure(figsize=(10.8,10.8),
 canvas=FigureCanvas(fig)
 
 def get_axis(n):
-    xmin=0.01
-    if n%2==1: xmin=0.505
-    ymin=[0.01,0.2505,0.505,0.7505][(n-1)//2]
-    ax=fig.add_axes([xmin,ymin,0.485,0.25-0.015])
+    offset=0.01
+    w=(1-3*offset)/2
+    h=(1-5*offset)/4
+    xmin=offset
+    if n%2==1: xmin=w+offset*2
+    ymin=[offset,
+          h+offset*2,
+          2*h+offset*3,
+          3*h+offset*4][(n-1)//2]
+    ax=fig.add_axes([xmin,ymin,w,h])
     return(ax)
 
 for n in (1,3,5,7):
