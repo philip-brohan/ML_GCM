@@ -12,7 +12,8 @@ import datetime
 import iris
 import IRData.twcr as twcr
 
-import timeit
+
+from timeit import default_timer as timer
 
 # Start on Jan 1st, 1989
 dtstart=datetime.datetime(1989,1,1,0)
@@ -64,8 +65,11 @@ model_save_file=("%s/ML_GCM/predictor/"+
                       os.getenv('SCRATCH'),epoch)
 encoder=tf.keras.models.load_model(model_save_file,compile=False)
 
-n_rep=10
-p_time=timeit.timeit(stmt='state_v = predictor.predict_on_batch(state_v)',
-                    number=nrep)/nrep
+n_rep=500
+elapsed = sys.maxsize
+start = timer()
+for _ in range(n_rep):
+    state_v = predictor.predict_on_batch(state_v)
+elapsed = min(timer() - start, elapsed)/n_rep
 
-print("Time per prediction = %f" % p_time)
+print("Time per prediction = %d ms" % int(1000*elapsed))
