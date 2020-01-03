@@ -19,7 +19,7 @@ from timeit import default_timer as timer
 dtstart=datetime.datetime(1989,1,1,0)
 
 # Predictor model epoch
-epoch=10
+epoch=25
 
 sys.path.append('%s/../../lib/' % os.path.dirname(__file__))
 from insolation import load_insolation
