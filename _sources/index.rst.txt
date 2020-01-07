@@ -124,7 +124,7 @@ As a proof-of-concept this is a success: It is possible to build useful General 
    :titlesonly:
    :maxdepth: 1
 
-   Poster version <poster/index>
+   Presentation decks and poster <presentations/index>
 
 .. toctree::
    :titlesonly:
