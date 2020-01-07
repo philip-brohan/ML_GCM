@@ -1,4 +1,4 @@
-!#/usr/bin/env python
+#!/usr/bin/env python
 
 # Sync file to S3
 
@@ -7,6 +7,8 @@ s3 = boto3.client('s3')
 import datetime
 import pytz
 import os.path
+import threading
+import sys
 
 import argparse
 parser = argparse.ArgumentParser()
@@ -14,18 +16,26 @@ parser.add_argument("--bucket", help="S3 bucket",
                     type=str,required=False,
                     default='philip.brohan.org.big-files')
 parser.add_argument("--prefix", help="Bucket sub-dir",
-                    type=str,required=True)
+                    type=str,required=False,
+                    default=None)
 parser.add_argument("--name", help="File name",
                     type=str,required=True)
 args = parser.parse_args()
+
+key=args.name
+if args.prefix is not None:
+    key = "%s/%s" % (args.prefix,args.name)
 
 def get_from_s3():
     paginator = s3.get_paginator('list_objects')
     page_iterator = paginator.paginate(Bucket=args.bucket)
     for bucket_p in page_iterator: 
-        for f in bucket_p['Contents']:
-            if f['Key'] == "%s/%s" % (args.prefix,args.name):
-                return f
+        try:
+            for f in bucket_p['Contents']:
+                if f['Key'] == key:
+                    return f
+        except KeyError:
+            return None
     return None
 
 def get_from_local():
@@ -33,29 +43,32 @@ def get_from_local():
         mt=os.path.getmtime(args.name)
     except FileNotFoundError:
         return None
-    dt=datetime.utcfromtimestamp(mt)
-    dt=dt.replace(pytz.UTC)
+    dt=datetime.datetime.fromtimestamp(mt,pytz.UTC)
+    #dt=dt.replace(pytz.UTC)
     sz=os.path.getsize(args.name)
     return {'Size':sz,'LastModified':dt}
 
-def upload:
+def upload():
+    print("Uploading")
     s3.upload_file(
-        args.name, args.bucket, '%s/%s' % (args.prefix,args.name),
+        args.name, args.bucket, key,
         ExtraArgs={'ACL': 'public-read'},
-        Callback=ProgressPercentage(args.name)
+        Callback=ProgressPercentage(args.name,locald['Size'])
     )
     
-def download:
+def download():
+    print("Downloading")
     sr = boto3.resource('s3')
-    s3.Bucket(args.bucket).download_file('%s/%s' % (args.prefix,args.name),
-                                         args.name)
+    sr.Bucket(args.bucket).download_file(key,args.name,
+                                         Callback=ProgressPercentage(
+                                             args.name,s3d['Size']))
 
 
 class ProgressPercentage(object):
 
-    def __init__(self, filename):
+    def __init__(self, filename,filesize):
         self._filename = filename
-        self._size = float(os.path.getsize(filename))
+        self._size = filesize
         self._seen_so_far = 0
         self._lock = threading.Lock()
 
@@ -77,7 +90,7 @@ locald=get_from_local()
 
 if s3d is None:
     if locald is None:
-        raise ValueException("File not found at either end")
+        raise Exception("File not found at either end")
     else:
         upload()
 else:
