@@ -8,7 +8,7 @@ I've made a science poster presentation of this project (A0 poster, portrait for
    :align: center
    :figwidth: 75%
 
-* `Full resolution PDF (17Mb, printable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM_poster.pdf>`_
+* `Full resolution PDF (17Mb, printable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/ML_GCM_poster.pdf>`_
 * `Keynote source file (45Mb, editable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/ML_GCM_poster.key>`_
 
   
