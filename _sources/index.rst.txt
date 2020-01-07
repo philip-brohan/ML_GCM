@@ -124,6 +124,12 @@ As a proof-of-concept this is a success: It is possible to build useful General 
    :titlesonly:
    :maxdepth: 1
 
+   Poster version <poster/index>
+
+.. toctree::
+   :titlesonly:
+   :maxdepth: 1
+
    Small Print <credits>
 
 This document and the data associated with it are crown copyright (2019) and licensed under the terms of the `Open Government Licence <https://www.nationalarchives.gov.uk/doc/open-government-licence/version/2/>`_. All code included is licensed under the terms of the `GNU Lesser General Public License <https://www.gnu.org/licenses/lgpl.html>`_.
