@@ -12,6 +12,7 @@ I've made a science poster presentation of this project (A0 poster, portrait for
 * `Full resolution PDF (17Mb, printable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/ML_GCM_poster.pdf>`_
 * `Keynote source file (45Mb, editable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/ML_GCM_poster.key>`_
 
-I also have a slide deck for an oral presentation - kept here for the same reason.
+I also have a slide deck for an oral presentation - kept here for the same reason. (Same slide deck in two different formats).
 
-* `Keynote slide deck (1.58Gb, editable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/MetO_ML_20191126.key>`_
+* `Keynote slide deck (1.5Gb, editable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/MetO_ML_20191126.key>`_
+* `PowerPoint slide deck (1.5Gb, editable) <https://s3-eu-west-1.amazonaws.com/philip.brohan.org.big-files/ML_GCM/MetO_ML_20191126.pptx>`_
