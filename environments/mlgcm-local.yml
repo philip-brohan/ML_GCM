@@ -1,0 +1,16 @@
+name: mlgcm
+channels:
+  - default
+  - conda-forge
+dependencies:
+  - python=3.7
+  - iris=2.4.*
+  - cartopy=0.17.*
+  - tensorflow=2.1.*
+# Optional, code formatter
+  - black
+# Philip's libraries - file urls to work around http proxy problems
+  - pip
+  - pip:
+    - git+file:///net/home/h03/hadpb/Projects/IRData
+    - git+file:///net/home/h03/hadpb/Projects/Meteorographica
