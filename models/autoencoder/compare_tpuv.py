@@ -45,6 +45,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch", type=int, required=False, default=25)
 args = parser.parse_args()
 
+# Set up the model and load the weights at the chosen epoch
+from autoencoderModel import autoencoderModel
+
+autoencoder = autoencoderModel()
+weights_dir = ("%s/ML_GCM/autoencoder/" + "Epoch_%04d") % (
+    os.getenv("SCRATCH"),
+    args.epoch,
+)
+load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
+# Check it worked
+load_status.assert_existing_objects_matched()
+
 # Function to do the multivariate plot
 lsmask = iris.load_cube(
     "%s/fixed_fields/land_mask/opfc_global_2019.nc" % os.getenv("DATADIR")
@@ -158,12 +170,6 @@ v10m_t = tf.reshape(v10m_t, [79, 159, 1])
 insol_t = tf.convert_to_tensor(normalise_insolation(insol.data), numpy.float32)
 insol_t = tf.reshape(insol_t, [79, 159, 1])
 
-# Get autoencoded versions of the validation data
-model_save_file = ("%s/ML_GCM/autoencoder/" + "Epoch_%04d/autoencoder") % (
-    os.getenv("SCRATCH"),
-    args.epoch,
-)
-autoencoder = tf.keras.models.load_model(model_save_file, compile=False)
 ict = tf.concat([t2m_t, prmsl_t, u10m_t, v10m_t, insol_t], 2)  # Now [79,159,5]
 ict = tf.reshape(ict, [1, 79, 159, 5])
 result = autoencoder.predict_on_batch(ict)
@@ -187,14 +193,19 @@ v10m_r.data = unnormalise_wind(v10m_r.data)
 fig = Figure(
     figsize=(9.6 * 1.2, 10.8),
     dpi=100,
-    facecolor=(0.88, 0.88, 0.88, 1),
-    edgecolor=None,
+    facecolor="white",
+    edgecolor="black",
     linewidth=0.0,
     frameon=False,
     subplotpars=None,
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+# Paint the background white - why is this needed?
+ax_full = fig.add_axes([0, 0, 1, 1])
+ax_full.add_patch(
+    matplotlib.patches.Rectangle((0, 0), 1, 1, fill=True, facecolor="white")
+)
 
 # Two maps, original and reconstructed
 ax_original = fig.add_axes([0.005, 0.525, 0.75, 0.45])

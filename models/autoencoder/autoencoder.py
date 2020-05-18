@@ -5,15 +5,16 @@
 import os
 import sys
 import tensorflow as tf
+import tensorflow.keras.backend as K
 import pickle
 import numpy
 from glob import glob
 
-# How many epochs to train for
-n_epochs = 2 #26
+# Load the model specification
+from autoencoderModel import autoencoderModel
 
-# How big a latent space
-latent_dim = 100
+# How many epochs to train for
+n_epochs = 26
 
 # Target data setup
 buffer_size = 100
@@ -87,87 +88,10 @@ test_source = test_data.map(load_tensor)
 test_data = tf.data.Dataset.zip((test_source, test_target))
 test_data = test_data.batch(batch_size)
 
-# Add noise to latent vector
-def noise(encoded):
-    epsilon = tf.keras.backend.random_normal(
-        tf.keras.backend.shape(encoded), mean=0.0, stddev=0.5
-    )
-    return encoded + epsilon
+# Instantiate the model
+autoencoder = autoencoderModel()
 
-
-# Normalise the latent vector
-def stdise(encoded):
-    encoded = encoded - tf.keras.backend.mean(encoded)
-    encoded = encoded / tf.keras.backend.std(encoded)
-    return encoded
-
-
-# Input placeholder
-original = tf.keras.layers.Input(shape=(79, 159, 5,), name="encoder_input")
-# Encoding layers
-x = tf.keras.layers.Conv2D(5, (3, 3), padding="same")(original)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(10, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(30, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Dropout(0.3)(x)
-x = tf.keras.layers.Conv2D(90, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Dropout(0.3)(x)
-# N-dimensional latent space representation
-x = tf.keras.layers.Reshape(target_shape=(9 * 19 * 90,))(x)
-x = tf.keras.layers.Dense(latent_dim,)(x)
-encoded = tf.keras.layers.Lambda(stdise, output_shape=(latent_dim,))(x)
-
-# Define an encoder model
-encoder = tf.keras.models.Model(original, encoded, name="encoder")
-
-# Add a noise layer to make the encoder variational
-noise_i = tf.keras.layers.Input(shape=(latent_dim,), name="noise_input")
-noise_o = tf.keras.layers.Lambda(noise, output_shape=(latent_dim,))(noise_i)
-noise_m = tf.keras.models.Model(noise_i, noise_o, name="noise_m")
-
-# Decoding layers
-encoded = tf.keras.layers.Input(shape=(latent_dim,), name="decoder_input")
-x = tf.keras.layers.Dense(9 * 19 * 90,)(encoded)
-x = tf.keras.layers.Reshape(target_shape=(9, 19, 90,))(x)
-x = tf.keras.layers.Conv2DTranspose(90, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Conv2DTranspose(30, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-x = tf.keras.layers.Conv2DTranspose(10, (3, 3), strides=(2, 2), padding="valid")(x)
-x = tf.keras.layers.ELU()(x)
-decoded = tf.keras.layers.Conv2D(5, (3, 3), padding="same")(x)  # Will be 75x159x5
-
-# Define a generator (decoder) model
-generator = tf.keras.Model(encoded, decoded, name="generator")
-
-# Combine the encoder and the generator into an autoencoder
-class autoencoderModel(tf.keras.Model):
-
-  def __init__(self,encoderM,generatorM):
-    super(autoencoderModel, self).__init__()
-    self.encoder=encoderM
-    self.generator=generatorM
-
-  def call(self, inputs):
-    return self.generatorM(self.encoderM(inputs))
-
-autoencoder = autoencoderModel(encoder,generator,
-                               inputs=original)
-
-# Combine the encoder, the noise, and the generator, into a variational autoencoder
-output_v = generator(noise_m(encoder(original)))
-var_autoencoder = tf.keras.Model(
-    inputs=original, outputs=output_v, name="var_autoencoder"
-)
-
-var_autoencoder.compile(optimizer="adadelta", loss="mean_squared_error")
-
-# Save model and history state after every epoch
+# Save the model weights and the history state after every epoch
 history = {}
 history["loss"] = []
 history["val_loss"] = []
@@ -179,33 +103,35 @@ class CustomSaver(tf.keras.callbacks.Callback):
             os.getenv("SCRATCH"),
             epoch,
         )
-        if not os.path.isdir(os.path.dirname(save_dir)):
-            os.makedirs(os.path.dirname(save_dir))
-        for model in ["var_autoencoder", "autoencoder", "encoder", "generator"]:
-            if not os.path.isdir(os.path.dirname("%s/%s" % (save_dir, model))):
-                os.makedirs(os.path.dirname("%s/%s" % (save_dir, model)))
-        var_autoencoder.save("%s/var_autoencoder" % save_dir)
-        autoencoder.save("%s/autoencoder" % save_dir)
-        encoder.save("%s/encoder" % save_dir)
-        generator.save("%s/generator" % save_dir)
+        if not os.path.isdir(save_dir):
+            os.makedirs(save_dir)
+        self.model.save_weights("%s/ckpt" % save_dir)
         history["loss"].append(logs["loss"])
         history["val_loss"].append(logs["val_loss"])
-        history_file = ("%s/ML_GCM/autoencoder/" + "history_to_%04d.pkl") % (
-            os.getenv("SCRATCH"),
-            epoch,
-        )
+        history_file = "%s/history.pkl" % save_dir
         pickle.dump(history, open(history_file, "wb"))
 
 
-saver = CustomSaver()
+class ReduceNoise(tf.keras.callbacks.Callback):
+    def on_epoch_end(self, epoch, logs={}):
+        K.set_value(
+            self.model.noiseStdDev, self.model.noiseStdDev * 0.9,
+        )
+
 
 # Train the autoencoder
-history = var_autoencoder.fit(
+autoencoder.compile(
+    optimizer=tf.keras.optimizers.Adadelta(
+        learning_rate=1.0, rho=0.95, epsilon=1e-07, name="Adadelta"
+    ),
+    loss="mean_squared_error",
+)
+history = autoencoder.fit(
     x=tr_data,
     epochs=n_epochs,
-    steps_per_epoch=n_steps,
+    steps_per_epoch=n_steps // batch_size,
     validation_data=test_data,
-    validation_steps=test_steps,
+    validation_steps=test_steps // batch_size,
     verbose=1,
-    callbacks=[saver],
+    callbacks=[ReduceNoise(), CustomSaver()],
 )

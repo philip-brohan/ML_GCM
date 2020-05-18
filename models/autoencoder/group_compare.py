@@ -3,8 +3,6 @@
 # Compare 4 original weather fields with 4 generated fields.
 
 import tensorflow as tf
-
-tf.enable_eager_execution()
 import numpy
 
 import IRData.twcr as twcr
@@ -47,6 +45,18 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--epoch", help="Epoch", type=int, required=False, default=25)
 args = parser.parse_args()
 
+# Set up the model and load the weights at the chosen epoch
+from autoencoderModel import autoencoderModel
+
+autoencoder = autoencoderModel()
+weights_dir = ("%s/ML_GCM/autoencoder/" + "Epoch_%04d") % (
+    os.getenv("SCRATCH"),
+    args.epoch,
+)
+load_status = autoencoder.load_weights("%s/ckpt" % weights_dir)
+# Check it worked
+load_status.assert_existing_objects_matched()
+
 # Define a dummy cube to load with the compressed data
 def dummy_cube():
     cs = iris.coord_systems.RotatedGeogCS(90, 180, 0)
@@ -72,13 +82,12 @@ model_save_file = ("%s/ML_GCM/autoencoder/" + "Epoch_%04d/generator") % (
     os.getenv("SCRATCH"),
     args.epoch,
 )
-generator = tf.keras.models.load_model(model_save_file, compile=False)
 
 # Random latent state
 def random_state():
     ls = tf.convert_to_tensor(numpy.random.normal(size=100), numpy.float32)
     ls = tf.reshape(ls, [1, 100])
-    result = generator.predict_on_batch(ls)
+    result = autoencoder.generator.predict_on_batch(ls)
     result = tf.reshape(result, [79, 159, 5])
     t2m = dummy_cube()
     t2m.data = tf.reshape(result.numpy()[:, :, 0], [79, 159]).numpy()
@@ -209,6 +218,11 @@ fig = Figure(
     tight_layout=None,
 )
 canvas = FigureCanvas(fig)
+# Paint the background white - why is this needed?
+ax_full = fig.add_axes([0, 0, 1, 1])
+ax_full.add_patch(
+    matplotlib.patches.Rectangle((0, 0), 1, 1, fill=True, facecolor="white")
+)
 
 
 def get_axis(n):
